@@ -2,17 +2,19 @@ package agh.ics.oop;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class App extends Application {
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        Label label = new Label("Zwierzak");
-        Scene scene = new Scene(label, 400, 400);
+  @Override
+  public void start(Stage primaryStage) {
+    GridPane grid = new GridPane();
+    grid.gridLinesVisibleProperty();
 
-        primaryStage.setScene(scene);
-        primaryStage.show();
-    }
+    Scene scene = new Scene(grid, 400, 400);
+
+    primaryStage.setScene(scene);
+    primaryStage.show();
+  }
 }
