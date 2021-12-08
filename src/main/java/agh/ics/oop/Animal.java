@@ -4,7 +4,6 @@ import java.util.Random;
 
 public class Animal extends MapEntity {
 
-  // info o child
   private final Genome genome;
   private int age = 0;
   private int energy = 0; // VO?
@@ -37,9 +36,11 @@ public class Animal extends MapEntity {
     energy += e;
   }
 
-  public void move() {
+  public void makeOlder() {
     age += 1;
+  }
 
+  public void move() {
     Direction moveDirection = getNextDirection();
 
     direction = direction.rotateTowards(moveDirection);
@@ -62,7 +63,7 @@ public class Animal extends MapEntity {
     }
   }
 
-  Direction getNextDirection() {
-    return Direction.N; // todo
+  private Direction getNextDirection() {
+    return Direction.FromValue(genome.pickRandom());
   }
 }

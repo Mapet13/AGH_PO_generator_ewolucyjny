@@ -12,6 +12,13 @@ public enum Direction {
         this.value = value;
     }
 
+    public static Direction FromValue(int value) {
+        return Arrays.stream(values())
+                .filter(x -> x.value == value)
+                .findFirst()
+                .orElse(null);
+    }
+
     public Vector2d toUnitVector() {
         return switch(this) {
             case N -> new Vector2d(0, 1);
@@ -26,13 +33,6 @@ public enum Direction {
     }
 
     public Direction rotateTowards(Direction moveDirection) {
-        return fromValue((value + moveDirection.value) % SIZE);
-    }
-
-    private Direction fromValue(int value) {
-        return Arrays.stream(values())
-                .filter(x -> x.value == value)
-                .findFirst()
-                .orElse(null);
+        return FromValue((value + moveDirection.value) % SIZE);
     }
 }

@@ -28,4 +28,8 @@ public class Genome {
 
     return new Genome(result);
   }
+
+  public int pickRandom() {
+    return genome[new Random().nextInt(SIZE)];
+  }
 }
