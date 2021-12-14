@@ -18,10 +18,11 @@ public class Animal extends MapEntity {
   public Animal(Animal firstParent, Animal secondParent) {
     Animal[] parents = getOrderedParents(firstParent, secondParent);
 
-    genome = Genome.From(
-              parents[0].genome,
-              parents[1].genome,
-              (float) parents[0].energy / (float) parents[1].energy);
+    genome =
+        Genome.From(
+            parents[0].genome,
+            parents[1].genome,
+            (float) parents[0].energy / (float) parents[1].energy);
 
     position = firstParent.position;
 
@@ -65,5 +66,10 @@ public class Animal extends MapEntity {
 
   private Direction getNextDirection() {
     return Direction.FromValue(genome.pickRandom());
+  }
+
+  @Override
+  public String getImageRepresentationPath() {
+    return "src/main/resources/animal.png";
   }
 }

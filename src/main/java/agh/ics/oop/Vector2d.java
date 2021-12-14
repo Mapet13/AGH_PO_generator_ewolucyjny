@@ -1,8 +1,13 @@
 package agh.ics.oop;
 
 import java.util.Objects;
+import java.util.function.ToIntFunction;
 
 public record Vector2d(int x, int y) {
+    public static <T> Vector2d MapFrom(ToIntFunction<T> func, T x, T y) {
+        return new Vector2d(func.applyAsInt(x), func.applyAsInt(y));
+    }
+
     public boolean precedes(Vector2d other) {
         return x <= other.x && y <= other.y;
     }
