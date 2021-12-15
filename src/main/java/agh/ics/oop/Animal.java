@@ -1,21 +1,28 @@
 package agh.ics.oop;
 
+import javafx.util.Pair;
+
+import java.util.ArrayList;
 import java.util.Random;
 
 public class Animal extends MapEntity {
 
+  private final String id;
+  private final ArrayList<IMoveObserver> moveObservers = new ArrayList<>();
   private final Genome genome;
   private int age = 0;
   private int energy = 0; // VO?
-  private Direction direction;
+  private Direction direction = Direction.N;
 
-  public Animal(Vector2d position, int energy) {
+  public Animal(String id, Vector2d position, int energy) {
+    this.id = id;
     this.position = position;
     this.energy = energy;
     genome = Genome.Randomize();
   }
 
-  public Animal(Animal firstParent, Animal secondParent) {
+  public Animal(String id, Animal firstParent, Animal secondParent) {
+    this.id = id;
     Animal[] parents = getOrderedParents(firstParent, secondParent);
 
     genome =
@@ -27,6 +34,15 @@ public class Animal extends MapEntity {
     position = firstParent.position;
 
     appropriateParentalEnergy(parents);
+  }
+
+  public Animal(String id, Vector2d position, int startEnergy, IMoveObserver moveObserver) {
+    this(id, position, startEnergy);
+    addObserver(moveObserver);
+  }
+
+  private void addObserver(IMoveObserver observer) {
+    moveObservers.add(observer);
   }
 
   public int getEnergy() {
@@ -41,13 +57,25 @@ public class Animal extends MapEntity {
     age += 1;
   }
 
-  public void move() {
+  public void move(int energyCost) {
+    makeOlder();
+
+    energy -= energyCost;
+
     Direction moveDirection = getNextDirection();
 
     direction = direction.rotateTowards(moveDirection);
 
-    if (moveDirection == Direction.N || moveDirection == Direction.S)
+    if (moveDirection == Direction.N || moveDirection == Direction.S) {
+      Vector2d oldPos = position;
       position = position.add(direction.toUnitVector());
+      moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
+    }
+
+  }
+
+  public boolean isDead() {
+    return energy < 0;
   }
 
   private Animal[] getOrderedParents(Animal first, Animal second) {
@@ -71,5 +99,9 @@ public class Animal extends MapEntity {
   @Override
   public String getImageRepresentationPath() {
     return "src/main/resources/animal.png";
+  }
+
+  public String getID() {
+    return id;
   }
 }

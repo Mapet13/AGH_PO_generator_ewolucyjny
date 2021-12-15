@@ -3,6 +3,7 @@ package agh.ics.oop;
 import javafx.application.Application;
 import javafx.geometry.HPos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -15,17 +16,33 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 
-public class App extends Application {
-    WorldMap map;
-    AppConfig config;
-    int colHeight;
-    int colWidth;
-    GridPane grid;
+public class App extends Application implements IDayChangeObserver {
+    private WorldMap map;
+    private AppConfig config;
+    private int colHeight;
+    private int colWidth;
+    private GridPane grid;
+    private BorderPane layout;
 
     @Override
     public void start(Stage primaryStage) {
-        BorderPane layout = new BorderPane();
+        layout = new BorderPane();
 
+        Button startButton = new Button();
+        layout.setLeft(startButton);
+
+        startButton.setText("To Next Day");
+        startButton.setOnAction(event -> new Thread(() -> map.toNextDay()).start());
+
+        createMap();
+
+        Scene scene = new Scene(layout, 1400, 720);
+
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void createMap() {
         grid = new GridPane();
         grid.gridLinesVisibleProperty();
         grid.setGridLinesVisible(true);
@@ -50,11 +67,6 @@ public class App extends Application {
             }
 
         }
-
-        Scene scene = new Scene(layout, 1400, 720);
-
-        primaryStage.setScene(scene);
-        primaryStage.show();
     }
 
     private void drawObjectAt(Vector2d position) {
@@ -79,9 +91,16 @@ public class App extends Application {
         config = new AppConfig();
         config.InitialGrassCount = 20;
         config.InitialAnimalCount = 10;
-        config.MapHeight = 50;
-        config.MapWidth = 50;
+        config.MapHeight = 25;
+        config.MapWidth = 25;
+        config.StartEnergy = 30;
+        config.MoveEnergy = 10;
 
-        map = new WorldMap(config);
+        map = new WorldMap(config, this);
+    }
+
+    @Override
+    public void onDayChanged() {
+        createMap();
     }
 }
