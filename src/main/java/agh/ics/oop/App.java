@@ -89,11 +89,11 @@ public class App extends Application implements IDayChangeObserver {
     @Override
     public void init() {
         config = new AppConfig();
-        config.InitialGrassCount = 20;
-        config.InitialAnimalCount = 10;
-        config.MapHeight = 25;
-        config.MapWidth = 25;
-        config.StartEnergy = 30;
+        config.InitialGrassCount = 10;
+        config.InitialAnimalCount = 7;
+        config.MapHeight = 5;
+        config.MapWidth = 5;
+        config.StartEnergy = 500;
         config.MoveEnergy = 10;
 
         map = new WorldMap(config, this);

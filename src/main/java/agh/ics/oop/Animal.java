@@ -14,14 +14,9 @@ public class Animal extends MapEntity {
   private int energy = 0; // VO?
   private Direction direction = Direction.N;
 
-  public Animal(String id, Vector2d position, int energy) {
-    this.id = id;
-    this.position = position;
-    this.energy = energy;
-    genome = Genome.Randomize();
-  }
 
-  public Animal(String id, Animal firstParent, Animal secondParent) {
+  public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver) {
+    addObserver(moveObserver);
     this.id = id;
     Animal[] parents = getOrderedParents(firstParent, secondParent);
 
@@ -36,8 +31,12 @@ public class Animal extends MapEntity {
     appropriateParentalEnergy(parents);
   }
 
-  public Animal(String id, Vector2d position, int startEnergy, IMoveObserver moveObserver) {
-    this(id, position, startEnergy);
+  public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver) {
+    this.id = id;
+    this.position = position;
+    this.energy = energy;
+    genome = Genome.Randomize();
+
     addObserver(moveObserver);
   }
 

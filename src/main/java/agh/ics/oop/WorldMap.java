@@ -10,13 +10,20 @@ public class WorldMap implements IMoveObserver {
     private final AppConfig startingConfig;
     private final int minCoordinate = 0;
     private final Map<Vector2d, TreeSet<Animal>> animals = new LinkedHashMap<>();
-    private final ArrayList<Pair<Animal ,Vector2d>> animalsToMove = new ArrayList<>();
+    private final ArrayList<Pair<Animal, Vector2d>> animalsToMove = new ArrayList<>();
     private final Map<Vector2d, Grass> grasses = new LinkedHashMap<>();
+    private final HashSet<Vector2d> emptyPositions = new HashSet<>();
     private final IDayChangeObserver dayChangeObserver;
 
     public WorldMap(AppConfig startingConfig, IDayChangeObserver dayChangeObserver) {
         this.dayChangeObserver = dayChangeObserver;
         this.startingConfig = startingConfig;
+
+        for (int i = 0; i < startingConfig.MapHeight; i++) {
+            for (int j = 0; j < startingConfig.MapWidth; j++) {
+                emptyPositions.add(new Vector2d(i, j));
+            }
+        }
 
         placeStartingObjects(startingConfig.InitialAnimalCount, this::placeStartingAnimal);
         placeStartingObjects(startingConfig.InitialGrassCount, this::placeStartingGrass);
@@ -50,6 +57,8 @@ public class WorldMap implements IMoveObserver {
         removeDeadAnimals();
         moveAnimals();
         feedAnimals();
+        breedAnimals();
+        addDailyGrasses();
 
         Platform.runLater(dayChangeObserver::onDayChanged);
 
@@ -58,6 +67,19 @@ public class WorldMap implements IMoveObserver {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void breedAnimals() {
+        animals.values().stream()
+                .filter(animalsOnSamePos -> animalsOnSamePos.size() > 2)
+                .forEach(animalsOnSamePos -> animalsOnSamePos.add(new Animal(animalIDProvider.getNext(), animalsOnSamePos.first(), animalsOnSamePos.iterator().next(), this)));
+    }
+
+    private void addDailyGrasses() {
+        //todo: dżungla
+
+        placeStartingGrass();
+        placeStartingGrass();
     }
 
     private void feedAnimals() {
@@ -79,7 +101,12 @@ public class WorldMap implements IMoveObserver {
     }
 
     private void removeDeadAnimals() {
-        animals.values().forEach(animalsAtSamePosition -> animalsAtSamePosition.removeIf(Animal::isDead));
+        animals.keySet().forEach(pos -> {
+            animals.get(pos).removeIf(Animal::isDead);
+            if (animals.get(pos).isEmpty()) {
+                emptyPositions.add(pos);
+            }
+        });
     }
 
     private Vector2d getRandomPosition() {
@@ -89,26 +116,28 @@ public class WorldMap implements IMoveObserver {
     }
 
     private void placeStartingGrass() {
-        grasses.put(getUniqueKeyFrom(), new Grass());
+        getUniquePosition().ifPresent(pos -> {
+            grasses.put(pos, new Grass());
+            emptyPositions.remove(pos);
+        });
     }
 
-    private Vector2d getUniqueKeyFrom() {
-        Vector2d position;
+    private Optional<Vector2d> getUniquePosition() {
+        if(emptyPositions.isEmpty())
+            return Optional.empty();
 
-        do { position = getRandomPosition(); }
-        while (isOccupied(position));
-
-        return position;
-    }
+        return Optional.of((Vector2d) emptyPositions.toArray()[new Random().nextInt(emptyPositions.size())]);
+   }
 
     private void placeStartingAnimal() {
-        final Vector2d position = getUniqueKeyFrom();
-
-        addAnimalAtSpecificPosHolder(position);
-        animals.get(position).add(new Animal(animalIDProvider.getNext(), position, startingConfig.StartEnergy, this));
+        final Optional<Vector2d> position = getUniquePosition();
+        position.ifPresent(this::addAnimalAtSpecificPosHolder);
+        Vector2d animalPos = position.orElse(getRandomPosition());
+        animals.get(animalPos).add(new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this));
     }
 
     private void addAnimalAtSpecificPosHolder(Vector2d position) {
+        emptyPositions.remove(position);
         animals.put(position, new TreeSet<>(Comparator.comparingInt(Animal::getEnergy).thenComparing(Animal::getID)));
     }
 
@@ -121,9 +150,13 @@ public class WorldMap implements IMoveObserver {
         animals.get(oldPosition).remove(animal);
 
         Vector2d currentPosition = animal.getPosition();
-        if(!animals.containsKey(currentPosition))
+        if (!animals.containsKey(currentPosition))
             addAnimalAtSpecificPosHolder(currentPosition);
 
         animals.get(currentPosition).add(animal);
+
+        if (animals.get(oldPosition).isEmpty()) {
+            emptyPositions.add(oldPosition);
+        }
     }
 }
