@@ -72,7 +72,7 @@ public class WorldMap implements IMoveObserver {
     private void breedAnimals() {
         animals.values().stream()
                 .filter(animalsOnSamePos -> animalsOnSamePos.size() > 2)
-                .forEach(animalsOnSamePos -> animalsOnSamePos.add(new Animal(animalIDProvider.getNext(), animalsOnSamePos.first(), animalsOnSamePos.iterator().next(), this)));
+                .forEach(animalsOnSamePos -> animalsOnSamePos.add(new Animal(animalIDProvider.getNext(), animalsOnSamePos.first(), animalsOnSamePos.iterator().next(), this, this)));
     }
 
     private void addDailyGrasses() {
@@ -84,8 +84,8 @@ public class WorldMap implements IMoveObserver {
 
     private void feedAnimals() {
         grasses.entrySet().removeIf(grass -> {
-            if (animals.containsKey(grass.getKey())) {
-                var animalAtPos = animals.get(grass.getKey());
+            var animalAtPos = animals.get(grass.getKey());
+            if (animalAtPos != null && animalAtPos.size() > 0) {
                 var animalWithBiggestEnergyValue = animalAtPos.stream().filter(animal -> animal.getEnergy() == animalAtPos.first().getEnergy()).toList();
                 animalWithBiggestEnergyValue.forEach(animal -> animal.eat(animalAtPos.first().getEnergy() / animalWithBiggestEnergyValue.size()));
                 return true;
@@ -133,7 +133,7 @@ public class WorldMap implements IMoveObserver {
         final Optional<Vector2d> position = getUniquePosition();
         position.ifPresent(this::addAnimalAtSpecificPosHolder);
         Vector2d animalPos = position.orElse(getRandomPosition());
-        animals.get(animalPos).add(new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this));
+        animals.get(animalPos).add(new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, this));
     }
 
     private void addAnimalAtSpecificPosHolder(Vector2d position) {
@@ -158,5 +158,10 @@ public class WorldMap implements IMoveObserver {
         if (animals.get(oldPosition).isEmpty()) {
             emptyPositions.add(oldPosition);
         }
+    }
+
+    public boolean canMoveTo(Vector2d pos) {
+        return pos.follows(new Vector2d(0, 0))
+                && pos.precedes(new Vector2d(startingConfig.MapWidth, startingConfig.MapHeight));
     }
 }

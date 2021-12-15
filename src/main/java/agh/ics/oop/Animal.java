@@ -1,7 +1,5 @@
 package agh.ics.oop;
 
-import javafx.util.Pair;
-
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -13,11 +11,13 @@ public class Animal extends MapEntity {
   private int age = 0;
   private int energy = 0; // VO?
   private Direction direction = Direction.N;
+  WorldMap map;
 
 
-  public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver) {
+  public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver, WorldMap map) {
     addObserver(moveObserver);
     this.id = id;
+    this.map = map;
     Animal[] parents = getOrderedParents(firstParent, secondParent);
 
     genome =
@@ -31,9 +31,10 @@ public class Animal extends MapEntity {
     appropriateParentalEnergy(parents);
   }
 
-  public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver) {
+  public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver, WorldMap map) {
     this.id = id;
     this.position = position;
+    this.map = map;
     this.energy = energy;
     genome = Genome.Randomize();
 
@@ -67,8 +68,11 @@ public class Animal extends MapEntity {
 
     if (moveDirection == Direction.N || moveDirection == Direction.S) {
       Vector2d oldPos = position;
-      position = position.add(direction.toUnitVector());
-      moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
+      Vector2d newPos = position.add(direction.toUnitVector());
+      if (map.canMoveTo(newPos)) {
+        position = newPos;
+        moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
+      }
     }
 
   }

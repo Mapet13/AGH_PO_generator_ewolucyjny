@@ -6,10 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.io.FileInputStream;
@@ -17,24 +14,47 @@ import java.io.FileNotFoundException;
 
 
 public class App extends Application implements IDayChangeObserver {
+    enum MapTypes {
+        Left(0), Right(1);
+
+        public final int value;
+
+        MapTypes(int value) {
+            this.value = value;
+        }
+    };
+
     private WorldMap map;
     private AppConfig config;
     private int colHeight;
     private int colWidth;
-    private GridPane grid;
+    private GridPane[] mapGrids;
     private BorderPane layout;
+    private HBox mapBox;
+
 
     @Override
     public void start(Stage primaryStage) {
+        mapGrids = new GridPane[2];
         layout = new BorderPane();
+        mapBox = new HBox();
+        mapBox.setSpacing(24);
 
         Button startButton = new Button();
         layout.setLeft(startButton);
 
         startButton.setText("To Next Day");
         startButton.setOnAction(event -> new Thread(() -> map.toNextDay()).start());
+        layout.setCenter(mapBox);
 
-        createMap();
+        mapGrids[MapTypes.Right.value] = new GridPane();
+        mapGrids[MapTypes.Left.value] = new GridPane();
+
+        mapBox.getChildren().add(MapTypes.Left.value, mapGrids[MapTypes.Left.value]);
+        mapBox.getChildren().add(MapTypes.Right.value, mapGrids[MapTypes.Right.value]);
+
+        createMap(MapTypes.Left);
+        createMap(MapTypes.Right);
 
         Scene scene = new Scene(layout, 1400, 720);
 
@@ -42,34 +62,34 @@ public class App extends Application implements IDayChangeObserver {
         primaryStage.show();
     }
 
-    private void createMap() {
-        grid = new GridPane();
-        grid.gridLinesVisibleProperty();
-        grid.setGridLinesVisible(true);
-        layout.setCenter(grid);
+    private void createMap(MapTypes type) {
+        mapGrids[type.value] = new GridPane();
+        mapGrids[type.value].gridLinesVisibleProperty();
+        mapGrids[type.value].setGridLinesVisible(true);
+        mapBox.getChildren().set(type.value, mapGrids[type.value]);
 
         int height = 500;
         int width = 500;
 
         colHeight = height / config.MapHeight;
         for (int i = 0; i <= config.MapHeight; i++) {
-            grid.getRowConstraints().add(new RowConstraints(colHeight));
+            mapGrids[type.value].getRowConstraints().add(new RowConstraints(colHeight));
         }
 
         colWidth = width / config.MapWidth;
         for (int i = 0; i <= config.MapWidth; i++) {
-            grid.getColumnConstraints().add(new ColumnConstraints(colWidth));
+            mapGrids[type.value].getColumnConstraints().add(new ColumnConstraints(colWidth));
         }
 
         for (int i = 0; i <= config.MapWidth; i++) {
             for (int j = 0; j <= config.MapHeight; j++) {
-                drawObjectAt(new Vector2d(j, i));
+                drawObjectAt(new Vector2d(j, i), type);
             }
 
         }
     }
 
-    private void drawObjectAt(Vector2d position) {
+    private void drawObjectAt(Vector2d position, MapTypes type) {
         if (map.isOccupied(position)) {
             MapEntity object = (MapEntity)map.objectAt(position);
             if (object != null) {
@@ -77,7 +97,7 @@ public class App extends Application implements IDayChangeObserver {
                 ImageView img = new ImageView(new Image(new FileInputStream(object.getImageRepresentationPath())));
                 img.setFitWidth(colWidth);
                 img.setFitHeight(colHeight);
-                grid.add(img, position.x(), position.y());
+                mapGrids[type.value].add(img, position.x(), position.y());
                 GridPane.setHalignment(img, HPos.CENTER);
               } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -101,6 +121,8 @@ public class App extends Application implements IDayChangeObserver {
 
     @Override
     public void onDayChanged() {
-        createMap();
+        //todo: ??
+        createMap(MapTypes.Left);
+        createMap(MapTypes.Right);
     }
 }
