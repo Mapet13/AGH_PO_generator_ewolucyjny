@@ -4,6 +4,6 @@ import java.util.UUID;
 
 public class IDProvider {
     public String getNext() {
-        return  UUID.randomUUID().toString();
+        return UUID.randomUUID().toString();
     }
 }

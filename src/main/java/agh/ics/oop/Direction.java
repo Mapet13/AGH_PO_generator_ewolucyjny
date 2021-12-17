@@ -20,7 +20,7 @@ public enum Direction {
     }
 
     public Vector2d toUnitVector() {
-        return switch(this) {
+        return switch (this) {
             case N -> new Vector2d(0, 1);
             case NW -> new Vector2d(1, 1);
             case W -> new Vector2d(1, 0);

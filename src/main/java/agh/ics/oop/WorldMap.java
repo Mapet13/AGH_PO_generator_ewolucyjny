@@ -13,6 +13,7 @@ public class WorldMap implements IMoveObserver {
     private final ArrayList<Pair<Animal, Vector2d>> animalsToMove = new ArrayList<>();
     private final Map<Vector2d, Grass> grasses = new LinkedHashMap<>();
     private final HashSet<Vector2d> emptyPositions = new HashSet<>();
+    private final HashSet<Vector2d> changedTiles = new HashSet<>();
     private final IDayChangeObserver dayChangeObserver;
 
     public WorldMap(AppConfig startingConfig, IDayChangeObserver dayChangeObserver) {
@@ -60,13 +61,15 @@ public class WorldMap implements IMoveObserver {
         breedAnimals();
         addDailyGrasses();
 
-        Platform.runLater(dayChangeObserver::onDayChanged);
+        Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles));
 
         try {
-            Thread.sleep(300);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        changedTiles.clear();
     }
 
     private void breedAnimals() {
@@ -105,6 +108,7 @@ public class WorldMap implements IMoveObserver {
             animals.get(pos).removeIf(Animal::isDead);
             if (animals.get(pos).isEmpty()) {
                 emptyPositions.add(pos);
+                changedTiles.add(pos);
             }
         });
     }
@@ -123,11 +127,11 @@ public class WorldMap implements IMoveObserver {
     }
 
     private Optional<Vector2d> getUniquePosition() {
-        if(emptyPositions.isEmpty())
+        if (emptyPositions.isEmpty())
             return Optional.empty();
 
         return Optional.of((Vector2d) emptyPositions.toArray()[new Random().nextInt(emptyPositions.size())]);
-   }
+    }
 
     private void placeStartingAnimal() {
         final Optional<Vector2d> position = getUniquePosition();
@@ -147,6 +151,9 @@ public class WorldMap implements IMoveObserver {
     }
 
     private void moveAnimalOnMap(Animal animal, Vector2d oldPosition) {
+        changedTiles.add(oldPosition);
+        changedTiles.add(animal.getPosition());
+
         animals.get(oldPosition).remove(animal);
 
         Vector2d currentPosition = animal.getPosition();
@@ -162,6 +169,6 @@ public class WorldMap implements IMoveObserver {
 
     public boolean canMoveTo(Vector2d pos) {
         return pos.follows(new Vector2d(0, 0))
-                && pos.precedes(new Vector2d(startingConfig.MapWidth, startingConfig.MapHeight));
+                && pos.precedes(new Vector2d(startingConfig.MapWidth - 1, startingConfig.MapHeight - 1));
     }
 }
