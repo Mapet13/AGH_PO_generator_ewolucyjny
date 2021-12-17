@@ -5,16 +5,16 @@ import javafx.application.Platform;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class WorldMap implements IMoveObserver {
-    private final IDProvider animalIDProvider = new IDProvider();
-    private final AppConfig startingConfig;
-    private final int minCoordinate = 0;
-    private final Map<Vector2d, TreeSet<Animal>> animals = new LinkedHashMap<>();
-    private final ArrayList<Pair<Animal, Vector2d>> animalsToMove = new ArrayList<>();
-    private final Map<Vector2d, Grass> grasses = new LinkedHashMap<>();
-    private final HashSet<Vector2d> emptyPositions = new HashSet<>();
-    private final HashSet<Vector2d> changedTiles = new HashSet<>();
-    private final IDayChangeObserver dayChangeObserver;
+public abstract class WorldMap implements IMoveObserver {
+    protected final IDProvider animalIDProvider = new IDProvider();
+    protected final Map<Vector2d, TreeSet<Animal>> animals = new LinkedHashMap<>();
+    protected final ArrayList<Pair<Animal, Vector2d>> animalsToMove = new ArrayList<>();
+    protected final Map<Vector2d, Grass> grasses = new LinkedHashMap<>();
+    protected final HashSet<Vector2d> emptyPositions = new HashSet<>();
+    protected final HashSet<Vector2d> changedTiles = new HashSet<>();
+    protected final IDayChangeObserver dayChangeObserver;
+    protected final AppConfig startingConfig;
+    protected final int minCoordinate = 0;
 
     public WorldMap(AppConfig startingConfig, IDayChangeObserver dayChangeObserver) {
         this.dayChangeObserver = dayChangeObserver;
@@ -47,7 +47,7 @@ public class WorldMap implements IMoveObserver {
     }
 
     private <T> T specificObjectAt(Map<Vector2d, T> objects, Vector2d position) {
-        return objects.get(position);
+        return objects.get(getProperPosition(position));
     }
 
     private void placeStartingObjects(int count, Runnable creationMethod) {
@@ -90,7 +90,7 @@ public class WorldMap implements IMoveObserver {
             var animalAtPos = animals.get(grass.getKey());
             if (animalAtPos != null && animalAtPos.size() > 0) {
                 var animalWithBiggestEnergyValue = animalAtPos.stream().filter(animal -> animal.getEnergy() == animalAtPos.first().getEnergy()).toList();
-                animalWithBiggestEnergyValue.forEach(animal -> animal.eat(animalAtPos.first().getEnergy() / animalWithBiggestEnergyValue.size()));
+                animalWithBiggestEnergyValue.forEach(animal -> animal.eat(startingConfig.PlantEnergy / animalWithBiggestEnergyValue.size()));
                 return true;
             }
             return false;
@@ -123,6 +123,7 @@ public class WorldMap implements IMoveObserver {
         getUniquePosition().ifPresent(pos -> {
             grasses.put(pos, new Grass());
             emptyPositions.remove(pos);
+            changedTiles.add(pos);
         });
     }
 
@@ -151,12 +152,14 @@ public class WorldMap implements IMoveObserver {
     }
 
     private void moveAnimalOnMap(Animal animal, Vector2d oldPosition) {
+        oldPosition = getProperPosition(oldPosition);
+
         changedTiles.add(oldPosition);
-        changedTiles.add(animal.getPosition());
+        changedTiles.add(getProperPosition(animal.getPosition()));
 
         animals.get(oldPosition).remove(animal);
 
-        Vector2d currentPosition = animal.getPosition();
+        Vector2d currentPosition = getProperPosition(animal.getPosition());
         if (!animals.containsKey(currentPosition))
             addAnimalAtSpecificPosHolder(currentPosition);
 
@@ -167,8 +170,6 @@ public class WorldMap implements IMoveObserver {
         }
     }
 
-    public boolean canMoveTo(Vector2d pos) {
-        return pos.follows(new Vector2d(0, 0))
-                && pos.precedes(new Vector2d(startingConfig.MapWidth - 1, startingConfig.MapHeight - 1));
-    }
+    abstract protected Vector2d getProperPosition(Vector2d position);
+    abstract public boolean canMoveTo(Vector2d pos);
 }

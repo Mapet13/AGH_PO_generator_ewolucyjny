@@ -1,6 +1,7 @@
 package agh.ics.oop;
 
 import java.util.Objects;
+import java.util.function.IntBinaryOperator;
 import java.util.function.ToIntFunction;
 
 public record Vector2d(int x, int y) {
@@ -47,6 +48,12 @@ public record Vector2d(int x, int y) {
     public Vector2d opposite() {
         return new Vector2d(y, x);
     }
+
+    public Vector2d moduloWith(int dx, int dy) {
+        IntBinaryOperator wrappingModulo = (num, mod) -> num - (int)(mod * Math.floor((double)num / mod));
+        return new Vector2d(wrappingModulo.applyAsInt(x, dx), wrappingModulo.applyAsInt(y, dy));
+    }
+
 
     @Override
     public String toString() {
