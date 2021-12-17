@@ -11,6 +11,11 @@ public class BorderedWorldMap extends WorldMap {
     }
 
     @Override
+    protected MapTypes getMapType() {
+        return MapTypes.Bordered;
+    }
+
+    @Override
     public boolean canMoveTo(Vector2d pos) {
         return pos.follows(new Vector2d(0, 0))
                 && pos.precedes(new Vector2d(startingConfig.MapWidth - 1, startingConfig.MapHeight - 1));

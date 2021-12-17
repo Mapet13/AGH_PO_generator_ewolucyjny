@@ -55,21 +55,15 @@ public abstract class WorldMap implements IMoveObserver {
     }
 
     public void toNextDay() {
+        changedTiles.clear();
+
         removeDeadAnimals();
         moveAnimals();
         feedAnimals();
         breedAnimals();
         addDailyGrasses();
 
-        Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles));
-
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        changedTiles.clear();
+        Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles, getMapType()));
     }
 
     private void breedAnimals() {
@@ -171,5 +165,6 @@ public abstract class WorldMap implements IMoveObserver {
     }
 
     abstract protected Vector2d getProperPosition(Vector2d position);
+    abstract protected MapTypes getMapType();
     abstract public boolean canMoveTo(Vector2d pos);
 }

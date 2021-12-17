@@ -11,6 +11,11 @@ public class WrappedWorldMap extends WorldMap {
     }
 
     @Override
+    protected MapTypes getMapType() {
+        return MapTypes.Wrapped;
+    }
+
+    @Override
     public boolean canMoveTo(Vector2d pos) {
         return true;
     }
