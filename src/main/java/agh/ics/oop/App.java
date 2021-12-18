@@ -12,7 +12,18 @@ import java.util.HashSet;
 import java.util.Optional;
 
 public class App extends Application implements IDayChangeObserver {
+    enum State {
+        Running, Stopped;
 
+        public static State next(State state) {
+            return switch (state) {
+                case Stopped -> Running;
+                case Running -> Stopped;
+            };
+        }
+    }
+
+    private State state = State.Stopped;
     private static final int mapCount = 2;
     private final ImageResourcesManager imageResourcesManager = new ImageResourcesManager();
     private WorldMap[] maps;
@@ -23,9 +34,12 @@ public class App extends Application implements IDayChangeObserver {
     private MapTile[][][] mapTiles;
     private BorderPane layout;
     private HBox mapBox;
+    private SymulationRunner symulationRunner;
 
     @Override
     public void start(Stage primaryStage) {
+        symulationRunner = new SymulationRunner(maps, 300);
+
         mapGrids = new GridPane[mapCount];
         mapTiles = new MapTile[mapCount][config.MapWidth][config.MapHeight];
         layout = new BorderPane();
@@ -33,19 +47,25 @@ public class App extends Application implements IDayChangeObserver {
         mapBox.setSpacing(24);
 
         Button startButton = new Button();
-        layout.setLeft(startButton);
+        layout.setTop(startButton);
 
-        startButton.setText("To Next Day");
-        startButton.setOnAction(event -> new Thread(() -> {
-            maps[MapTypes.Wrapped.value].toNextDay();
-            maps[MapTypes.Bordered.value].toNextDay();
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        startButton.setText("Press to START");
+        startButton.setOnAction(event -> {
+            switch (state) {
+                case Stopped -> {
+                    startButton.setText("Pause");
+                    symulationRunner.resume();
+                    new Thread(symulationRunner).start();
+                }
+                case Running -> {
+                    startButton.setText("Resume");
+                    symulationRunner.pause();
+                }
             }
-        }).start());
+
+            state = State.next(state);
+        });
+
         layout.setCenter(mapBox);
 
         initializeMap(MapTypes.Wrapped);
