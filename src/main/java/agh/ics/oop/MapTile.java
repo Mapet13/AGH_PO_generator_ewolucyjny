@@ -12,12 +12,12 @@ public class MapTile extends Node {
     private final int width;
     private final int height;
 
-    MapTile(Optional<String> contentPath, int width, int height, ImageResourcesManager imageResourcesManager) {
+    MapTile(Optional<String> contentPath, BackgroundType backgroundType, int width, int height, ImageResourcesManager imageResourcesManager) {
         this.imageResourcesManager = imageResourcesManager;
         this.width = width;
         this.height = height;
 
-        body.getChildren().add(getImageViewFromPath("src/main/resources/background.jpg", width, height));
+        body.getChildren().add(getImageViewFromPath(backgroundType.getImageRepresentationPath(), width, height));
         contentPath.ifPresent(path -> body.getChildren().add(getImageViewFromPath(path, width, height)));
     }
 

@@ -3,6 +3,7 @@ package agh.ics.oop;
 import javafx.application.Platform;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class WorldMap implements IMoveObserver {
@@ -15,10 +16,13 @@ public abstract class WorldMap implements IMoveObserver {
     protected final IDayChangeObserver dayChangeObserver;
     protected final AppConfig startingConfig;
     protected final int minCoordinate = 0;
+    protected final int grassDailyIncrease = 2;
+    protected final Jungle jungle;
 
-    public WorldMap(AppConfig startingConfig, IDayChangeObserver dayChangeObserver) {
+    public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
         this.dayChangeObserver = dayChangeObserver;
         this.startingConfig = startingConfig;
+        this.jungle = jungle;
 
         for (int i = 0; i < startingConfig.MapHeight; i++) {
             for (int j = 0; j < startingConfig.MapWidth; j++) {
@@ -27,7 +31,7 @@ public abstract class WorldMap implements IMoveObserver {
         }
 
         placeStartingObjects(startingConfig.InitialAnimalCount, this::placeStartingAnimal);
-        placeStartingObjects(startingConfig.InitialGrassCount, this::placeStartingGrass);
+        placeStartingObjects(startingConfig.InitialGrassCount, () -> placeGrass(emptyPositions));
     }
 
     public boolean isOccupied(Vector2d position) {
@@ -73,10 +77,11 @@ public abstract class WorldMap implements IMoveObserver {
     }
 
     private void addDailyGrasses() {
-        //todo: dżungla
+        Map<Boolean, List<Vector2d>> positionsByTerrainType = emptyPositions.stream()
+                .collect(Collectors.partitioningBy(jungle::isAt));
 
-        placeStartingGrass();
-        placeStartingGrass();
+        IntStream.range(0, grassDailyIncrease).forEach(i -> placeGrass(positionsByTerrainType.get(true)));
+        IntStream.range(0, grassDailyIncrease).forEach(i -> placeGrass(positionsByTerrainType.get(false)));
     }
 
     private void feedAnimals() {
@@ -113,23 +118,23 @@ public abstract class WorldMap implements IMoveObserver {
                 startingConfig.MapHeight);
     }
 
-    private void placeStartingGrass() {
-        getUniquePosition().ifPresent(pos -> {
+    private void placeGrass(Collection<Vector2d> availablePositions) {
+        getUniquePosition(availablePositions).ifPresent(pos -> {
             grasses.put(pos, new Grass());
             emptyPositions.remove(pos);
             changedTiles.add(pos);
         });
     }
 
-    private Optional<Vector2d> getUniquePosition() {
-        if (emptyPositions.isEmpty())
+    private Optional<Vector2d> getUniquePosition(Collection<Vector2d> availablePositions) {
+        if (availablePositions.isEmpty())
             return Optional.empty();
 
-        return Optional.of((Vector2d) emptyPositions.toArray()[new Random().nextInt(emptyPositions.size())]);
+        return Optional.of((Vector2d) availablePositions.toArray()[new Random().nextInt(availablePositions.size())]);
     }
 
     private void placeStartingAnimal() {
-        final Optional<Vector2d> position = getUniquePosition();
+        final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
         position.ifPresent(this::addAnimalAtSpecificPosHolder);
         Vector2d animalPos = position.orElse(getRandomPosition());
         animals.get(animalPos).add(new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, this));

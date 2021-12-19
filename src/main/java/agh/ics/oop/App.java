@@ -35,6 +35,7 @@ public class App extends Application implements IDayChangeObserver {
     private BorderPane layout;
     private HBox mapBox;
     private SymulationRunner symulationRunner;
+    private Jungle jungle;
 
     @Override
     public void start(Stage primaryStage) {
@@ -111,7 +112,11 @@ public class App extends Application implements IDayChangeObserver {
     }
 
     private void drawObjectAt(Vector2d position, MapTypes type) {
-        mapTiles[type.value][position.x()][position.y()] = new MapTile(contentPathAt(position, type), colWidth, colHeight, imageResourcesManager);
+        BackgroundType bgType = jungle.isAt(position)
+                ? BackgroundType.Jungle
+                : BackgroundType.Regular;
+
+        mapTiles[type.value][position.x()][position.y()] = new MapTile(contentPathAt(position, type), bgType, colWidth, colHeight, imageResourcesManager);
         mapGrids[type.value].add(mapTiles[type.value][position.x()][position.y()].getBody(), position.x(), position.y());
         GridPane.setHalignment(mapTiles[type.value][position.x()][position.y()].getBody(), HPos.CENTER);
     }
@@ -136,10 +141,13 @@ public class App extends Application implements IDayChangeObserver {
         config.StartEnergy = 80;
         config.MoveEnergy = 10;
         config.PlantEnergy = 50;
+        config.JungleRatio = 0.5f;
+
+        jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
 
         maps = new WorldMap[mapCount];
-        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, this);
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, this);
+        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this);
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this);
     }
 
     @Override
