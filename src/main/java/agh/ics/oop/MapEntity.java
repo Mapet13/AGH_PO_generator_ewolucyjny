@@ -8,4 +8,5 @@ public abstract class MapEntity {
     }
 
     public abstract String getImageRepresentationPath();
+    public abstract String getRepresentationLabel();
 }

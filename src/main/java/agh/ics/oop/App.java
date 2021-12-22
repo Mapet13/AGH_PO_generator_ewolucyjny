@@ -1,6 +1,5 @@
 package agh.ics.oop;
 
-import agh.ics.oop.ChartsPane.ChartTypes;
 import javafx.application.Application;
 import javafx.geometry.HPos;
 import javafx.scene.Node;
@@ -8,27 +7,16 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.HashSet;
-import java.util.Optional;
 
 public class App extends Application implements IDayChangeObserver {
-    enum State {
-        Running, Stopped;
-
-        public static State next(State state) {
-            return switch (state) {
-                case Stopped -> Running;
-                case Running -> Stopped;
-            };
-        }
-    }
-
-    private State state = State.Stopped;
     private static final int mapCount = 2;
     private final ImageResourcesManager imageResourcesManager = new ImageResourcesManager();
+    private final ChartsPane[] chartsPanes = new ChartsPane[mapCount];
+    private final Label[] mostCommonGenome = new Label[mapCount];
+    private State state = State.Stopped;
     private WorldMap[] maps;
     private AppConfig config;
     private int colHeight;
@@ -38,8 +26,6 @@ public class App extends Application implements IDayChangeObserver {
     private HBox mapBox;
     private SymulationRunner symulationRunner;
     private Jungle jungle;
-    private final ChartsPane[] chartsPanes = new ChartsPane[mapCount];
-    private final Label[] mostCommonGenome = new Label[mapCount];
 
     @Override
     public void start(Stage primaryStage) {
@@ -70,7 +56,7 @@ public class App extends Application implements IDayChangeObserver {
         mapTiles = new MapTile[mapCount][config.MapWidth][config.MapHeight];
         BorderPane layout = new BorderPane();
         mapBox = new HBox();
-        mapBox.setSpacing(24);
+        mapBox.setSpacing(25);
 
         Button startButton = new Button();
         layout.setTop(startButton);
@@ -92,7 +78,7 @@ public class App extends Application implements IDayChangeObserver {
                 }
             }
 
-            state = State.next(state);
+            state = state.next();
         });
 
         layout.setCenter(mapBox);
@@ -100,7 +86,7 @@ public class App extends Application implements IDayChangeObserver {
         initializeMap(MapTypes.Wrapped);
         initializeMap(MapTypes.Bordered);
 
-        Scene scene = new Scene(layout, 1400, 720);
+        Scene scene = new Scene(layout, 1920, 1080);
 
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -118,8 +104,8 @@ public class App extends Application implements IDayChangeObserver {
         mapGrids[type.value].setGridLinesVisible(true);
         mapBox.getChildren().set(type.value, mapGrids[type.value]);
 
-        int height = 500;
-        int width = 500;
+        int height = 550;
+        int width = 550;
 
         colHeight = height / config.MapHeight;
         for (int i = 0; i < config.MapHeight; i++) {
@@ -149,14 +135,14 @@ public class App extends Application implements IDayChangeObserver {
         GridPane.setHalignment(mapTiles[type.value][position.x()][position.y()].getBody(), HPos.CENTER);
     }
 
-    private Optional<String> contentPathAt(Vector2d position, MapTypes type) {
+    private ContentData contentPathAt(Vector2d position, MapTypes type) {
         MapEntity object = (MapEntity) maps[type.value].objectAt(position);
 
-        if (object != null) {
-            return Optional.of(object.getImageRepresentationPath());
+        if (object == null) {
+            return ContentData.Empty();
         }
 
-        return Optional.empty();
+        return new ContentData(object.getImageRepresentationPath(), object.getRepresentationLabel());
     }
 
     @Override
@@ -164,8 +150,8 @@ public class App extends Application implements IDayChangeObserver {
         config = new AppConfig();
         config.InitialGrassCount = 40;
         config.InitialAnimalCount = 90;
-        config.MapHeight = 15;
-        config.MapWidth = 15;
+        config.MapHeight = 40;
+        config.MapWidth = 40;
         config.StartEnergy = 180;
         config.MoveEnergy = 10;
         config.PlantEnergy = 200;
@@ -189,12 +175,23 @@ public class App extends Application implements IDayChangeObserver {
         int day = maps[type.value].getDayCount() - 1;
         chartsPanes[type.value].addValue(ChartTypes.animalCount, day, maps[type.value].getAnimalCount());
         chartsPanes[type.value].addValue(ChartTypes.grassCount, day, maps[type.value].getGrassCount());
-        chartsPanes[type.value].addValue(ChartTypes.averageChildrenCount, day, maps[type.value].getAverageEnergyLevel());
-        chartsPanes[type.value].addValue(ChartTypes.averageEnergyCount, day, maps[type.value].getAverageChildrenCount());
+        chartsPanes[type.value].addValue(ChartTypes.averageChildrenCount, day, maps[type.value].getAverageChildrenCount());
+        chartsPanes[type.value].addValue(ChartTypes.averageEnergyCount, day, maps[type.value].getAverageEnergyLevel());
 
         if (maps[type.value].haveAnyDeadAnimals())
             chartsPanes[type.value].addValue(ChartTypes.averageLengthOfLife, day, maps[type.value].getAverageLengthOfLife());
 
         mostCommonGenome[type.value].setText(maps[type.value].getMostCommonGenome().toString());
+    }
+
+    private enum State {
+        Running, Stopped;
+
+        public State next() {
+            return switch (this) {
+                case Stopped -> Running;
+                case Running -> Stopped;
+            };
+        }
     }
 }

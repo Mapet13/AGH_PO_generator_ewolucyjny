@@ -6,7 +6,7 @@ public class AppConfig {
     int StartEnergy;
     int MoveEnergy;
     int PlantEnergy;
-    float JungleRatio;
     int InitialAnimalCount;
     int InitialGrassCount;
+    float JungleRatio;
 }

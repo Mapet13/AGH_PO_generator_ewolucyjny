@@ -1,28 +1,28 @@
 package agh.ics.oop;
 
-import java.util.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Animal extends MapEntity {
 
     private final static float parentalEnergyFactor = 0.25f;
+    private int age = 0;
+    private int energy = 0;
     private final String id;
-    private final ArrayList<IMoveObserver> moveObservers = new ArrayList<>();
     private final Genome genome;
     private final WorldMap map;
-    private int age = 0;
-    private int energy = 0; // VO?
     private Direction direction = Direction.N;
-    private List<Animal> childrens = new ArrayList<>();
+    private final List<Animal> children = new ArrayList<>();
+    private final List<IMoveObserver> moveObservers = new ArrayList<>();
 
     public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver, WorldMap map) {
         addObserver(moveObserver);
+
         this.id = id;
         this.map = map;
         Pair<Animal, Animal> parents = Pair.ShuffledPair(firstParent, secondParent);
 
-        genome =
-                Genome.From(
+        genome = Genome.From(
                         parents.first().genome,
                         parents.second().genome,
                         (float) parents.first().energy / (float) parents.second().energy);
@@ -33,13 +33,13 @@ public class Animal extends MapEntity {
     }
 
     public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver, WorldMap map) {
+        addObserver(moveObserver);
+
         this.id = id;
         this.position = position;
         this.map = map;
         this.energy = energy;
         genome = Genome.Randomize();
-
-        addObserver(moveObserver);
     }
 
     public void addObserver(IMoveObserver observer) {
@@ -47,11 +47,11 @@ public class Animal extends MapEntity {
     }
 
     public void addChild(Animal child) {
-        childrens.add(child);
+        children.add(child);
     }
 
     public int getChildrenCount() {
-        return childrens.size();
+        return children.size();
     }
 
     public int getEnergy() {
@@ -66,6 +66,18 @@ public class Animal extends MapEntity {
         age += 1;
     }
 
+    public String getID() {
+        return id;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public Genome getGenome() {
+        return genome;
+    }
+
     public void move(int energyCost) {
         makeOlder();
 
@@ -75,12 +87,7 @@ public class Animal extends MapEntity {
         direction = direction.rotateTowards(moveDirection);
 
         if (moveDirection == Direction.N || moveDirection == Direction.S) {
-            Vector2d oldPos = position;
-            Vector2d newPos = position.add(direction.toUnitVector());
-            if (map.canMoveTo(newPos)) {
-                position = newPos;
-                moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
-            }
+            moveForwardIfPossible();
         }
     }
 
@@ -93,8 +100,9 @@ public class Animal extends MapEntity {
         return "src/main/resources/animal.png";
     }
 
-    public String getID() {
-        return id;
+    @Override
+    public String getRepresentationLabel() {
+        return String.valueOf(energy);
     }
 
     private void appropriateParentalEnergy(Pair<Animal, Animal> parents) {
@@ -105,15 +113,16 @@ public class Animal extends MapEntity {
         }
     }
 
+    private void moveForwardIfPossible() {
+        Vector2d oldPos = position;
+        Vector2d newPos = position.add(direction.toUnitVector());
+        if (map.canMoveTo(newPos)) {
+            position = newPos;
+            moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
+        }
+    }
+    
     private Direction getNextDirection() {
         return Direction.FromValue(genome.pickRandom());
-    }
-
-    public int getAge() {
-        return age;
-    }
-
-    public Genome getGenome() {
-        return genome;
     }
 }

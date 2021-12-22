@@ -2,7 +2,6 @@ package agh.ics.oop;
 
 import javafx.application.Platform;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -43,7 +42,7 @@ public abstract class WorldMap implements IMoveObserver {
         return isOccupiedBy(animals, position) || isOccupiedBy(grasses, position);
     }
 
-    private boolean isOccupiedBy(Map<Vector2d, ?> objects, Vector2d position) {
+    public boolean isOccupiedBy(Map<Vector2d, ?> objects, Vector2d position) {
         return specificObjectAt(objects, position) != null;
     }
 
@@ -115,7 +114,10 @@ public abstract class WorldMap implements IMoveObserver {
     }
 
     private void moveAnimals() {
-        animals.values().forEach(animalsAtSamePosition -> animalsAtSamePosition.forEach(animal -> animal.move(startingConfig.MoveEnergy)));
+        animals.forEach((key, value) -> {
+            value.forEach(animal -> animal.move(startingConfig.MoveEnergy));
+            changedTiles.add(key);
+        });
         animalsToMove.forEach(pair -> moveAnimalOnMap(pair.first(), pair.second()));
         animalsToMove.clear();
     }
@@ -130,7 +132,6 @@ public abstract class WorldMap implements IMoveObserver {
             }
             if (animals.get(pos).isEmpty()) {
                 emptyPositions.add(pos);
-                changedTiles.add(pos);
             }
         });
     }
@@ -178,7 +179,6 @@ public abstract class WorldMap implements IMoveObserver {
     private void moveAnimalOnMap(Animal animal, Vector2d oldPosition) {
         oldPosition = getProperPosition(oldPosition);
 
-        changedTiles.add(oldPosition);
         changedTiles.add(getProperPosition(animal.getPosition()));
 
         animals.get(oldPosition).remove(animal);

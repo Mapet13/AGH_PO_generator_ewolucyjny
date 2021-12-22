@@ -9,7 +9,7 @@ public class Chart {
     private final LineChart<Number, Number> body = new LineChart<>(new NumberAxis(), new NumberAxis());
     private final XYChart.Series<Number, Number> series = new XYChart.Series<>();
 
-    Chart(Color color, String name) {
+    public Chart(Color color, String name) {
         body.getData().add(series);
         body.setTitle(name);
         body.setCreateSymbols(false);

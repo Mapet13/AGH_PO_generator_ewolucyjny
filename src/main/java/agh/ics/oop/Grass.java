@@ -5,4 +5,9 @@ public class Grass extends MapEntity {
     public String getImageRepresentationPath() {
         return "src/main/resources/grass.png";
     }
+
+    @Override
+    public String getRepresentationLabel() {
+        return "";
+    }
 }
