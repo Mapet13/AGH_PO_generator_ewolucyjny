@@ -1,5 +1,6 @@
 package agh.ics.oop;
 
+import java.util.*;
 import java.util.ArrayList;
 
 public class Animal extends MapEntity {
@@ -12,6 +13,7 @@ public class Animal extends MapEntity {
     private int age = 0;
     private int energy = 0; // VO?
     private Direction direction = Direction.N;
+    private List<Animal> childrens = new ArrayList<>();
 
     public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver, WorldMap map) {
         addObserver(moveObserver);
@@ -42,6 +44,14 @@ public class Animal extends MapEntity {
 
     public void addObserver(IMoveObserver observer) {
         moveObservers.add(observer);
+    }
+
+    public void addChild(Animal child) {
+        childrens.add(child);
+    }
+
+    public int getChildrenCount() {
+        return childrens.size();
     }
 
     public int getEnergy() {
@@ -97,5 +107,13 @@ public class Animal extends MapEntity {
 
     private Direction getNextDirection() {
         return Direction.FromValue(genome.pickRandom());
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public Genome getGenome() {
+        return genome;
     }
 }

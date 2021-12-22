@@ -1,17 +1,12 @@
 package agh.ics.oop;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 
-public class Genome {
+public record Genome(int[] genome) {
     public static final int SIZE = 32;
     public static final int MAX = 7;
-
-    public final int[] genome;
-
-    public Genome(int[] genome) {
-        this.genome = genome;
-    }
 
     public static Genome Randomize() {
         final Random rand = new Random();
@@ -30,5 +25,24 @@ public class Genome {
 
     public int pickRandom() {
         return genome[new Random().nextInt(SIZE)];
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(genome);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other)
+            return true;
+        if (!(other instanceof Genome that))
+            return false;
+        return Arrays.equals(genome, that.genome);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(genome);
     }
 }

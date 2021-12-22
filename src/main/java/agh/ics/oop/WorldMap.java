@@ -2,12 +2,16 @@ package agh.ics.oop;
 
 import javafx.application.Platform;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class WorldMap implements IMoveObserver {
     protected final IDProvider animalIDProvider = new IDProvider();
+    protected final ArrayList<Animal> livingAnimals = new ArrayList<>();
+    protected final ArrayList<Animal> deadAnimals = new ArrayList<>();
     protected final Map<Vector2d, TreeSet<Animal>> animals = new LinkedHashMap<>();
     protected final ArrayList<Pair<Animal, Vector2d>> animalsToMove = new ArrayList<>();
     protected final Map<Vector2d, Grass> grasses = new LinkedHashMap<>();
@@ -18,6 +22,7 @@ public abstract class WorldMap implements IMoveObserver {
     protected final int minCoordinate = 0;
     protected final int grassDailyIncrease = 2;
     protected final Jungle jungle;
+    private int dayCount = 0;
 
     public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
         this.dayChangeObserver = dayChangeObserver;
@@ -58,6 +63,10 @@ public abstract class WorldMap implements IMoveObserver {
         IntStream.range(0, count).forEach(i -> creationMethod.run());
     }
 
+    public int getDayCount() {
+        return dayCount;
+    }
+
     public void toNextDay() {
         changedTiles.clear();
 
@@ -67,13 +76,22 @@ public abstract class WorldMap implements IMoveObserver {
         breedAnimals();
         addDailyGrasses();
 
+        dayCount += 1;
+
         Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles, getMapType()));
     }
 
     private void breedAnimals() {
         animals.values().stream()
                 .filter(animalsOnSamePos -> animalsOnSamePos.size() > 2)
-                .forEach(animalsOnSamePos -> animalsOnSamePos.add(new Animal(animalIDProvider.getNext(), animalsOnSamePos.first(), animalsOnSamePos.iterator().next(), this, this)));
+                .forEach(animalsOnSamePos -> {
+                    Pair<Animal, Animal> parents = new Pair<>(animalsOnSamePos.first(), animalsOnSamePos.iterator().next());
+                    Animal child = new Animal(animalIDProvider.getNext(), parents.first(), parents.second(), this, this);
+                    animalsOnSamePos.add(child);
+                    livingAnimals.add(child);
+                    parents.first().addChild(child);
+                    parents.second().addChild(child);
+                });
     }
 
     private void addDailyGrasses() {
@@ -104,7 +122,12 @@ public abstract class WorldMap implements IMoveObserver {
 
     private void removeDeadAnimals() {
         animals.keySet().forEach(pos -> {
-            animals.get(pos).removeIf(Animal::isDead);
+            var animalsToRemove = animals.get(pos).stream().filter(Animal::isDead).toList();
+            for (var animal : animalsToRemove) {
+                animals.get(pos).remove(animal);
+                livingAnimals.remove(animal);
+                deadAnimals.add(animal);
+            }
             if (animals.get(pos).isEmpty()) {
                 emptyPositions.add(pos);
                 changedTiles.add(pos);
@@ -137,7 +160,9 @@ public abstract class WorldMap implements IMoveObserver {
         final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
         position.ifPresent(this::addAnimalAtSpecificPosHolder);
         Vector2d animalPos = position.orElse(getRandomPosition());
-        animals.get(animalPos).add(new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, this));
+        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, this);
+        animals.get(animalPos).add(animal);
+        livingAnimals.add(animal);
     }
 
     private void addAnimalAtSpecificPosHolder(Vector2d position) {
@@ -172,4 +197,38 @@ public abstract class WorldMap implements IMoveObserver {
     abstract protected Vector2d getProperPosition(Vector2d position);
     abstract protected MapTypes getMapType();
     abstract public boolean canMoveTo(Vector2d pos);
+
+    public int getAnimalCount() {
+        return livingAnimals.size();
+    }
+
+    public int getGrassCount() {
+        return grasses.size();
+    }
+
+    public float getAverageEnergyLevel() {
+        return getAverageValueOfAnimals(livingAnimals, Animal::getEnergy);
+    }
+
+    public float getAverageLengthOfLife() {
+        return getAverageValueOfAnimals(deadAnimals, Animal::getAge);
+    }
+
+    public boolean haveAnyDeadAnimals() {
+        return !deadAnimals.isEmpty();
+    }
+
+    public float getAverageChildrenCount() {
+        return getAverageValueOfAnimals(livingAnimals, Animal::getChildrenCount);
+    }
+
+    private float getAverageValueOfAnimals(ArrayList<Animal> list, ToIntFunction<Animal> mapper) {
+        return list.stream().mapToInt(mapper).sum() / (float)list.size();
+    }
+
+    public Genome getMostCommonGenome() {
+        Map<Genome, Integer> map = new HashMap<>();
+        livingAnimals.stream().map(Animal::getGenome).forEach(t -> map.compute(t, (k, i) -> i == null ? 1 : i + 1));
+        return Collections.max(map.entrySet(), Map.Entry.comparingByValue()).getKey();
+    }
 }

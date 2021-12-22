@@ -1,11 +1,14 @@
 package agh.ics.oop;
 
+import agh.ics.oop.ChartsPane.ChartTypes;
 import javafx.application.Application;
 import javafx.geometry.HPos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.HashSet;
@@ -32,23 +35,48 @@ public class App extends Application implements IDayChangeObserver {
     private int colWidth;
     private GridPane[] mapGrids;
     private MapTile[][][] mapTiles;
-    private BorderPane layout;
     private HBox mapBox;
     private SymulationRunner symulationRunner;
     private Jungle jungle;
+    private final ChartsPane[] chartsPanes = new ChartsPane[mapCount];
+    private final Label[] mostCommonGenome = new Label[mapCount];
 
     @Override
     public void start(Stage primaryStage) {
         symulationRunner = new SymulationRunner(maps, 300);
 
+        mostCommonGenome[MapTypes.Bordered.value] = new Label();
+        mostCommonGenome[MapTypes.Wrapped.value] = new Label();
+
+        chartsPanes[MapTypes.Bordered.value] = new ChartsPane();
+        chartsPanes[MapTypes.Wrapped.value] = new ChartsPane();
+
+        VBox leftLayout = new VBox();
+        leftLayout.getChildren().add(mostCommonGenome[MapTypes.Wrapped.value]);
+        leftLayout.getChildren().add(chartsPanes[MapTypes.Wrapped.value].getBody());
+
+        VBox rightLayout = new VBox();
+        rightLayout.getChildren().add(mostCommonGenome[MapTypes.Bordered.value]);
+        rightLayout.getChildren().add(chartsPanes[MapTypes.Bordered.value].getBody());
+
+        leftLayout.setMinWidth(400);
+        leftLayout.setMaxWidth(400);
+        leftLayout.setMaxHeight(320);
+        rightLayout.setMinWidth(400);
+        rightLayout.setMaxWidth(400);
+        rightLayout.setMaxHeight(320);
+
         mapGrids = new GridPane[mapCount];
         mapTiles = new MapTile[mapCount][config.MapWidth][config.MapHeight];
-        layout = new BorderPane();
+        BorderPane layout = new BorderPane();
         mapBox = new HBox();
         mapBox.setSpacing(24);
 
         Button startButton = new Button();
         layout.setTop(startButton);
+
+        layout.setLeft(leftLayout);
+        layout.setRight(rightLayout);
 
         startButton.setText("Press to START");
         startButton.setOnAction(event -> {
@@ -134,13 +162,13 @@ public class App extends Application implements IDayChangeObserver {
     @Override
     public void init() {
         config = new AppConfig();
-        config.InitialGrassCount = 100;
-        config.InitialAnimalCount = 70;
+        config.InitialGrassCount = 40;
+        config.InitialAnimalCount = 90;
         config.MapHeight = 15;
         config.MapWidth = 15;
-        config.StartEnergy = 80;
+        config.StartEnergy = 180;
         config.MoveEnergy = 10;
-        config.PlantEnergy = 50;
+        config.PlantEnergy = 200;
         config.JungleRatio = 0.5f;
 
         jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
@@ -157,5 +185,16 @@ public class App extends Application implements IDayChangeObserver {
                 .map(node -> new Vector2d(GridPane.getColumnIndex(node), GridPane.getRowIndex(node)))
                 .filter(changedTiles::contains)
                 .forEach(position -> mapTiles[type.value][position.x()][position.y()].changeContent(contentPathAt(position, type)));
+
+        int day = maps[type.value].getDayCount() - 1;
+        chartsPanes[type.value].addValue(ChartTypes.animalCount, day, maps[type.value].getAnimalCount());
+        chartsPanes[type.value].addValue(ChartTypes.grassCount, day, maps[type.value].getGrassCount());
+        chartsPanes[type.value].addValue(ChartTypes.averageChildrenCount, day, maps[type.value].getAverageEnergyLevel());
+        chartsPanes[type.value].addValue(ChartTypes.averageEnergyCount, day, maps[type.value].getAverageChildrenCount());
+
+        if (maps[type.value].haveAnyDeadAnimals())
+            chartsPanes[type.value].addValue(ChartTypes.averageLengthOfLife, day, maps[type.value].getAverageLengthOfLife());
+
+        mostCommonGenome[type.value].setText(maps[type.value].getMostCommonGenome().toString());
     }
 }
