@@ -7,7 +7,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public abstract class WorldMap implements IMoveObserver {
+public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     protected final IDProvider animalIDProvider = new IDProvider();
     protected final ArrayList<Animal> livingAnimals = new ArrayList<>();
     protected final ArrayList<Animal> deadAnimals = new ArrayList<>();
@@ -22,6 +22,7 @@ public abstract class WorldMap implements IMoveObserver {
     protected final int grassDailyIncrease = 2;
     protected final Jungle jungle;
     private int dayCount = 0;
+    private final ReproductionSystem reproductionSystem = new ReproductionSystem(animalIDProvider, this);
 
     public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
         this.dayChangeObserver = dayChangeObserver;
@@ -72,7 +73,7 @@ public abstract class WorldMap implements IMoveObserver {
         removeDeadAnimals();
         moveAnimals();
         feedAnimals();
-        breedAnimals();
+        reproduceAnimals();
         addDailyGrasses();
 
         dayCount += 1;
@@ -80,16 +81,15 @@ public abstract class WorldMap implements IMoveObserver {
         Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles, getMapType()));
     }
 
-    private void breedAnimals() {
+    private void reproduceAnimals() {
+        final int minimalParentsCount = 2;
+
         animals.values().stream()
-                .filter(animalsOnSamePos -> animalsOnSamePos.size() > 2)
+                .filter(animalsOnSamePos -> animalsOnSamePos.size() >= minimalParentsCount)
                 .forEach(animalsOnSamePos -> {
-                    Pair<Animal, Animal> parents = new Pair<>(animalsOnSamePos.first(), animalsOnSamePos.iterator().next());
-                    Animal child = new Animal(animalIDProvider.getNext(), parents.first(), parents.second(), this, this);
+                    Animal child = reproductionSystem.createChildrenFrom(animalsOnSamePos.first(), animalsOnSamePos.iterator().next());
                     animalsOnSamePos.add(child);
                     livingAnimals.add(child);
-                    parents.first().addChild(child);
-                    parents.second().addChild(child);
                 });
     }
 
@@ -115,7 +115,14 @@ public abstract class WorldMap implements IMoveObserver {
 
     private void moveAnimals() {
         animals.forEach((key, value) -> {
-            value.forEach(animal -> animal.move(startingConfig.MoveEnergy));
+            ArrayList<Animal> animalAtPos = new ArrayList<>();
+            value.forEach(animal -> {
+                animal.move(startingConfig.MoveEnergy, this);
+                animalAtPos.add(animal);
+            });
+            value.clear();
+            value.addAll(animalAtPos);
+
             changedTiles.add(key);
         });
         animalsToMove.forEach(pair -> moveAnimalOnMap(pair.first(), pair.second()));
@@ -161,7 +168,7 @@ public abstract class WorldMap implements IMoveObserver {
         final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
         position.ifPresent(this::addAnimalAtSpecificPosHolder);
         Vector2d animalPos = position.orElse(getRandomPosition());
-        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, this);
+        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this);
         animals.get(animalPos).add(animal);
         livingAnimals.add(animal);
     }
@@ -196,7 +203,6 @@ public abstract class WorldMap implements IMoveObserver {
 
     abstract protected Vector2d getProperPosition(Vector2d position);
     abstract protected MapTypes getMapType();
-    abstract public boolean canMoveTo(Vector2d pos);
 
     public int getAnimalCount() {
         return livingAnimals.size();

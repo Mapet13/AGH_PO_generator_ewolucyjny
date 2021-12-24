@@ -1,20 +1,18 @@
 package agh.ics.oop;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.Label;
+import javafx.event.EventHandler;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
 
 public class MapTile {
+    private static final double maxFontSize = 10.0f;
     private final ImageResourcesManager imageResourcesManager;
     private final StackPane body = new StackPane();
     private final StackPane content = new StackPane();
     private final int width;
     private final int height;
-
 
     MapTile(ContentData data, BackgroundType backgroundType, int width, int height, ImageResourcesManager imageResourcesManager) {
         this.imageResourcesManager = imageResourcesManager;
@@ -29,6 +27,10 @@ public class MapTile {
         addContent(data);
     }
 
+    public void setOnMouseClicked(EventHandler<? super MouseEvent> onMouseClick) {
+        body.setOnMouseClicked(onMouseClick);
+    }
+
     public void changeContent(ContentData data) {
         content.getChildren().clear();
         addContent(data);
@@ -38,28 +40,19 @@ public class MapTile {
         return body;
     }
 
-    private void addContent(ContentData data) {
-        if (!data.isEmpty)
-            content.getChildren().add(getImageViewFromPath(data.contentPath, width, height));
-        if (!data.text.isEmpty()) {
-            content.getChildren().add(getLabel(data));
+    public void applySelectionOnContent() {
+        if (!content.getChildren().isEmpty()) {
+            ColorAdjust colorAdjust = new ColorAdjust();
+            colorAdjust.setBrightness(-0.8);
+            content.getChildren().get(0).setEffect(colorAdjust);
         }
     }
 
-    private VBox getLabel(ContentData data) {
-        Label text = new Label(data.text);
-        text.setFont(new Font(Math.min(10, width / 2)));
-        text.setTextFill(Color.BLACK);
-        text.setBackground(new Background(new BackgroundFill(
-                Color.rgb(255, 255, 255, 0.8),
-                new CornerRadii(10.0),
-                new Insets(-0.5)
-        )));
-        text.setAlignment(Pos.BOTTOM_CENTER);
-
-        VBox box = new VBox(text);
-        box.setAlignment(Pos.BOTTOM_CENTER);
-        return box;
+    private void addContent(ContentData data) {
+        if (!data.isEmpty)
+            content.getChildren().add(getImageViewFromPath(data.contentPath, width, height));
+        if (!data.text.isEmpty())
+            content.getChildren().add(new BoxedLabel(data.text, Math.min(maxFontSize, width / 2.0f)).body);
     }
 
     private ImageView getImageViewFromPath(String path, int width, int height) {
@@ -68,5 +61,11 @@ public class MapTile {
         img.setFitHeight(height);
         img.setFitWidth(width);
         return img;
+    }
+
+    public void removeSelectionOnContent() {
+        if (!content.getChildren().isEmpty()) {
+            content.getChildren().get(0).setEffect(null);
+        }
     }
 }

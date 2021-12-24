@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class App extends Application implements IDayChangeObserver {
@@ -26,9 +27,24 @@ public class App extends Application implements IDayChangeObserver {
     private HBox mapBox;
     private SymulationRunner symulationRunner;
     private Jungle jungle;
+    private final Label genomeText = new Label();
+    private final Label childrenText = new Label();
+    private final Label ancestorsText = new Label();
+    private final Label dayOfDeathText = new Label();
+    private final ArrayList<MapTile> selectedAnimals = new ArrayList<>();
+    private boolean isFollowingSelectedAnimal = false;
+    private Animal followingAnimal;
+    private MapTypes followingAnimalMapType;
+    private int childrenCountUntilFollowing;
+    private int ancestorsCountUntilFollowing;
+    private final HistoryRecorder[] historyRecorder = new HistoryRecorder[]{new HistoryRecorder(), new HistoryRecorder()};
 
     @Override
     public void start(Stage primaryStage) {
+        BorderPane layout = new BorderPane();
+
+        layout.setBottom(new VBox(genomeText, childrenText, ancestorsText, dayOfDeathText));
+
         symulationRunner = new SymulationRunner(maps, 300);
 
         mostCommonGenome[MapTypes.Bordered.value] = new Label();
@@ -54,7 +70,7 @@ public class App extends Application implements IDayChangeObserver {
 
         mapGrids = new GridPane[mapCount];
         mapTiles = new MapTile[mapCount][config.MapWidth][config.MapHeight];
-        BorderPane layout = new BorderPane();
+
         mapBox = new HBox();
         mapBox.setSpacing(25);
 
@@ -71,6 +87,13 @@ public class App extends Application implements IDayChangeObserver {
                     startButton.setText("Pause");
                     symulationRunner.resume();
                     new Thread(symulationRunner).start();
+                    if(!isFollowingSelectedAnimal) {
+                        selectedAnimals.clear();
+                        ancestorsText.setText("");
+                        childrenText.setText("");
+                        genomeText.setText("");
+                        dayOfDeathText.setText("");
+                    }
                 }
                 case Running -> {
                     startButton.setText("Resume");
@@ -104,8 +127,9 @@ public class App extends Application implements IDayChangeObserver {
         mapGrids[type.value].setGridLinesVisible(true);
         mapBox.getChildren().set(type.value, mapGrids[type.value]);
 
-        int height = 550;
-        int width = 550;
+        int mapMaxSize = 550;
+        int height = mapMaxSize * config.MapHeight / (Math.max(config.MapHeight, config.MapWidth));
+        int width = mapMaxSize * config.MapWidth / (Math.max(config.MapHeight, config.MapWidth));
 
         colHeight = height / config.MapHeight;
         for (int i = 0; i < config.MapHeight; i++) {
@@ -119,20 +143,52 @@ public class App extends Application implements IDayChangeObserver {
 
         for (int i = 0; i < config.MapWidth; i++) {
             for (int j = 0; j < config.MapHeight; j++) {
-                drawObjectAt(new Vector2d(j, i), type);
+                drawObjectAt(new Vector2d(i, j), type);
             }
 
         }
     }
 
     private void drawObjectAt(Vector2d position, MapTypes type) {
-        BackgroundType bgType = jungle.isAt(position)
+        BackgroundType backgroundType = jungle.isAt(position)
                 ? BackgroundType.Jungle
                 : BackgroundType.Regular;
 
-        mapTiles[type.value][position.x()][position.y()] = new MapTile(contentPathAt(position, type), bgType, colWidth, colHeight, imageResourcesManager);
-        mapGrids[type.value].add(mapTiles[type.value][position.x()][position.y()].getBody(), position.x(), position.y());
-        GridPane.setHalignment(mapTiles[type.value][position.x()][position.y()].getBody(), HPos.CENTER);
+        mapTiles[type.value][position.x()][position.y()] = new MapTile(
+                contentPathAt(position, type),
+                backgroundType,
+                colWidth,
+                colHeight,
+                imageResourcesManager
+        );
+
+        MapTile tile = mapTiles[type.value][position.x()][position.y()];
+        tile.setOnMouseClicked(event -> onTileClick(type, position));
+        mapGrids[type.value].add(tile.getBody(), position.x(), position.y());
+        GridPane.setHalignment(tile.getBody(), HPos.CENTER);
+    }
+
+    private void onTileClick(MapTypes type, Vector2d position) {
+        if(state == State.Running || !(maps[type.value].objectAt(position) instanceof Animal animal))
+            return;
+
+        MapTile tile = mapTiles[type.value][position.x()][position.y()];
+
+        tile.applySelectionOnContent();
+
+        selectedAnimals.forEach(MapTile::removeSelectionOnContent);
+        selectedAnimals.clear();
+        selectedAnimals.add(tile);
+
+        isFollowingSelectedAnimal = true;
+        followingAnimal = animal;
+        followingAnimalMapType = type;
+        childrenCountUntilFollowing = animal.getChildrenCount();
+        ancestorsCountUntilFollowing = animal.getAncestorsCount();
+
+        genomeText.setText(String.format("Genome: %s", animal.getGenome()));
+        ancestorsText.setText("Ancestors count since following: 0");
+        childrenText.setText("Children count since following: 0");
     }
 
     private ContentData contentPathAt(Vector2d position, MapTypes type) {
@@ -149,9 +205,9 @@ public class App extends Application implements IDayChangeObserver {
     public void init() {
         config = new AppConfig();
         config.InitialGrassCount = 40;
-        config.InitialAnimalCount = 90;
-        config.MapHeight = 40;
-        config.MapWidth = 40;
+        config.InitialAnimalCount = 20;
+        config.MapHeight = 10;
+        config.MapWidth = 10;
         config.StartEnergy = 180;
         config.MoveEnergy = 10;
         config.PlantEnergy = 200;
@@ -173,15 +229,36 @@ public class App extends Application implements IDayChangeObserver {
                 .forEach(position -> mapTiles[type.value][position.x()][position.y()].changeContent(contentPathAt(position, type)));
 
         int day = maps[type.value].getDayCount() - 1;
-        chartsPanes[type.value].addValue(ChartTypes.animalCount, day, maps[type.value].getAnimalCount());
-        chartsPanes[type.value].addValue(ChartTypes.grassCount, day, maps[type.value].getGrassCount());
-        chartsPanes[type.value].addValue(ChartTypes.averageChildrenCount, day, maps[type.value].getAverageChildrenCount());
-        chartsPanes[type.value].addValue(ChartTypes.averageEnergyCount, day, maps[type.value].getAverageEnergyLevel());
+        recordValue(SimulationDataTrackValueTypes.animalCount, day, type, maps[type.value].getAnimalCount());
+        recordValue(SimulationDataTrackValueTypes.grassCount, day, type, maps[type.value].getGrassCount());
+        recordValue(SimulationDataTrackValueTypes.averageChildrenCount, day, type, maps[type.value].getAverageChildrenCount());
+        recordValue(SimulationDataTrackValueTypes.averageEnergyCount, day, type, maps[type.value].getAverageEnergyLevel());;
 
-        if (maps[type.value].haveAnyDeadAnimals())
-            chartsPanes[type.value].addValue(ChartTypes.averageLengthOfLife, day, maps[type.value].getAverageLengthOfLife());
+        if (maps[type.value].haveAnyDeadAnimals()) {
+            recordValue(SimulationDataTrackValueTypes.averageLengthOfLife, day, type, maps[type.value].getAverageLengthOfLife());
+        } else {
+            historyRecorder[type.value].recordValue(SimulationDataTrackValueTypes.averageLengthOfLife, 0);
+        }
+
+        historyRecorder[type.value].toNextDay();
 
         mostCommonGenome[type.value].setText(maps[type.value].getMostCommonGenome().toString());
+
+        if(followingAnimalMapType.equals(type) && isFollowingSelectedAnimal && followingAnimal != null) {
+            Object atPos = maps[type.value].objectAt(followingAnimal.getPosition());
+            if(atPos != null && atPos.equals(followingAnimal))
+                mapTiles[followingAnimalMapType.value][followingAnimal.position.x()][followingAnimal.position.y()].applySelectionOnContent();
+            childrenText.setText(String.format("Children count since following: %s", followingAnimal.getChildrenCount() - childrenCountUntilFollowing));
+            ancestorsText.setText(String.format("Ancestors count since following: %s", followingAnimal.getAncestorsCount() - ancestorsCountUntilFollowing));
+
+            if(followingAnimal.isDead() && dayOfDeathText.getText().isEmpty())
+                dayOfDeathText.setText(String.format("Day of death: %s", day));
+        }
+    }
+
+    private void recordValue(SimulationDataTrackValueTypes valueType, int day,MapTypes mapType, Number value) {
+        chartsPanes[mapType.value].addValue(valueType, day, value);
+        historyRecorder[mapType.value].recordValue(valueType, value);
     }
 
     private enum State {

@@ -2,7 +2,7 @@ package agh.ics.oop;
 
 import javafx.scene.paint.Color;
 
-public enum ChartTypes {
+public enum SimulationDataTrackValueTypes {
     animalCount(Color.BROWN, "Living animal count"),
     grassCount(Color.GREEN, "Grass count"),
     averageEnergyCount(Color.RED, "Average energy value"),
@@ -12,7 +12,7 @@ public enum ChartTypes {
     public final Color color;
     public final String name;
 
-    ChartTypes(Color color, String name) {
+    SimulationDataTrackValueTypes(Color color, String name) {
         this.color = color;
         this.name = name;
     }

@@ -5,41 +5,25 @@ import java.util.List;
 
 public class Animal extends MapEntity {
 
-    private final static float parentalEnergyFactor = 0.25f;
     private int age = 0;
-    private int energy = 0;
+    private int energy;
     private final String id;
     private final Genome genome;
-    private final WorldMap map;
-    private Direction direction = Direction.N;
     private final List<Animal> children = new ArrayList<>();
     private final List<IMoveObserver> moveObservers = new ArrayList<>();
+    private Direction direction = Direction.N;
 
-    public Animal(String id, Animal firstParent, Animal secondParent, IMoveObserver moveObserver, WorldMap map) {
-        addObserver(moveObserver);
-
-        this.id = id;
-        this.map = map;
-        Pair<Animal, Animal> parents = Pair.ShuffledPair(firstParent, secondParent);
-
-        genome = Genome.From(
-                        parents.first().genome,
-                        parents.second().genome,
-                        (float) parents.first().energy / (float) parents.second().energy);
-
-        position = firstParent.position;
-
-        appropriateParentalEnergy(parents);
-    }
-
-    public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver, WorldMap map) {
+    public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver, Genome genome) {
         addObserver(moveObserver);
 
         this.id = id;
         this.position = position;
-        this.map = map;
         this.energy = energy;
-        genome = Genome.Randomize();
+        this.genome = genome;
+    }
+
+    public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver) {
+        this(id, position, energy, moveObserver, Genome.Randomize());
     }
 
     public void addObserver(IMoveObserver observer) {
@@ -54,8 +38,16 @@ public class Animal extends MapEntity {
         return children.size();
     }
 
+    public int getAncestorsCount() {
+        return children.size() + children.stream().mapToInt(Animal::getAncestorsCount).sum();
+    }
+
     public int getEnergy() {
         return energy;
+    }
+
+    public void subtractEnergy(int energy) {
+        this.energy -= energy;
     }
 
     public void eat(int e) {
@@ -78,16 +70,15 @@ public class Animal extends MapEntity {
         return genome;
     }
 
-    public void move(int energyCost) {
+    public void move(int energyCost, IMoveLimiter moveLimiter) {
         makeOlder();
-
-        energy -= energyCost;
+        subtractEnergy(energyCost);
 
         Direction moveDirection = getNextDirection();
         direction = direction.rotateTowards(moveDirection);
 
         if (moveDirection == Direction.N || moveDirection == Direction.S) {
-            moveForwardIfPossible();
+            moveForwardIfPossible(moveLimiter);
         }
     }
 
@@ -105,18 +96,10 @@ public class Animal extends MapEntity {
         return String.valueOf(energy);
     }
 
-    private void appropriateParentalEnergy(Pair<Animal, Animal> parents) {
-        for (Animal parent : new Animal[]{parents.first(), parents.second()}) {
-            int parentalEnergy = Math.round(parent.energy * parentalEnergyFactor);
-            parent.energy -= parentalEnergy;
-            energy += parentalEnergy;
-        }
-    }
-
-    private void moveForwardIfPossible() {
+    private void moveForwardIfPossible(IMoveLimiter moveLimiter) {
         Vector2d oldPos = position;
         Vector2d newPos = position.add(direction.toUnitVector());
-        if (map.canMoveTo(newPos)) {
+        if (moveLimiter.canMoveTo(newPos)) {
             position = newPos;
             moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
         }
