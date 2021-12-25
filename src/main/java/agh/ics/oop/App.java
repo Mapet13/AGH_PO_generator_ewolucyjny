@@ -10,6 +10,7 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 public class App extends Application implements IDayChangeObserver {
@@ -42,6 +43,32 @@ public class App extends Application implements IDayChangeObserver {
     @Override
     public void start(Stage primaryStage) {
         BorderPane layout = new BorderPane();
+        String saveStatisticsToFileText = "Save statistics to file";
+        String choseAllAnimalsWithMostCommonGenotypeText = "Chose All Animals With Most Common Genotype";
+        Button[] saveStatisticsToFile = new Button[]{new Button(saveStatisticsToFileText), new Button(saveStatisticsToFileText)};
+        Button[] choseAllAnimalsWithMostCommonGenotype = new Button[]{new Button(choseAllAnimalsWithMostCommonGenotypeText), new Button(choseAllAnimalsWithMostCommonGenotypeText)};
+
+        Arrays.stream(MapTypes.values()).forEach(type ->  {
+            saveStatisticsToFile[type.value].setOnAction(event ->
+                    historyRecorder[type.value].saveToFile("statistics.csv")
+            );
+        });
+
+        Arrays.stream(MapTypes.values()).forEach(type -> {
+            choseAllAnimalsWithMostCommonGenotype[type.value].setOnAction(event -> {
+                selectedAnimals.forEach(MapTile::removeSelectionOnContent);
+                selectedAnimals.clear();
+                var animals = maps[type.value].getAnimalsWithGenome(maps[type.value].getMostCommonGenome());
+                animals.forEach(animal -> {
+                    var pos = animal.getPosition();
+                    if(maps[type.value].objectAt(pos).equals(animal)) {
+                        selectedAnimals.add(mapTiles[type.value][pos.x()][pos.y()]);
+                    }
+                });
+
+                selectedAnimals.forEach(MapTile::applySelectionOnContent);
+            });
+        });
 
         layout.setBottom(new VBox(genomeText, childrenText, ancestorsText, dayOfDeathText));
 
@@ -56,10 +83,14 @@ public class App extends Application implements IDayChangeObserver {
         VBox leftLayout = new VBox();
         leftLayout.getChildren().add(mostCommonGenome[MapTypes.Wrapped.value]);
         leftLayout.getChildren().add(chartsPanes[MapTypes.Wrapped.value].getBody());
+        leftLayout.getChildren().add(saveStatisticsToFile[MapTypes.Wrapped.value]);
+        leftLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Wrapped.value]);
 
         VBox rightLayout = new VBox();
         rightLayout.getChildren().add(mostCommonGenome[MapTypes.Bordered.value]);
         rightLayout.getChildren().add(chartsPanes[MapTypes.Bordered.value].getBody());
+        rightLayout.getChildren().add(saveStatisticsToFile[MapTypes.Bordered.value]);
+        rightLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Bordered.value]);
 
         leftLayout.setMinWidth(400);
         leftLayout.setMaxWidth(400);
@@ -94,10 +125,18 @@ public class App extends Application implements IDayChangeObserver {
                         genomeText.setText("");
                         dayOfDeathText.setText("");
                     }
+                    rightLayout.getChildren().remove(saveStatisticsToFile[MapTypes.Bordered.value]);
+                    leftLayout.getChildren().remove(saveStatisticsToFile[MapTypes.Wrapped.value]);
+                    rightLayout.getChildren().remove(choseAllAnimalsWithMostCommonGenotype[MapTypes.Bordered.value]);
+                    leftLayout.getChildren().remove(choseAllAnimalsWithMostCommonGenotype[MapTypes.Wrapped.value]);
                 }
                 case Running -> {
                     startButton.setText("Resume");
                     symulationRunner.pause();
+                    rightLayout.getChildren().add(saveStatisticsToFile[MapTypes.Bordered.value]);
+                    leftLayout.getChildren().add(saveStatisticsToFile[MapTypes.Wrapped.value]);
+                    rightLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Bordered.value]);
+                    leftLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Wrapped.value]);
                 }
             }
 
@@ -212,12 +251,13 @@ public class App extends Application implements IDayChangeObserver {
         config.MoveEnergy = 10;
         config.PlantEnergy = 200;
         config.JungleRatio = 0.5f;
+        config.IsMagic = new boolean[]{false, false};
 
         jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
 
         maps = new WorldMap[mapCount];
-        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this);
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this);
+        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
     }
 
     @Override
@@ -244,7 +284,7 @@ public class App extends Application implements IDayChangeObserver {
 
         mostCommonGenome[type.value].setText(maps[type.value].getMostCommonGenome().toString());
 
-        if(followingAnimalMapType.equals(type) && isFollowingSelectedAnimal && followingAnimal != null) {
+        if(isFollowingSelectedAnimal && followingAnimal != null && followingAnimalMapType.equals(type) ) {
             Object atPos = maps[type.value].objectAt(followingAnimal.getPosition());
             if(atPos != null && atPos.equals(followingAnimal))
                 mapTiles[followingAnimalMapType.value][followingAnimal.position.x()][followingAnimal.position.y()].applySelectionOnContent();

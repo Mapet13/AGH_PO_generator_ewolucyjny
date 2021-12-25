@@ -9,4 +9,5 @@ public class AppConfig {
     int InitialAnimalCount;
     int InitialGrassCount;
     float JungleRatio;
+    boolean[] IsMagic;
 }

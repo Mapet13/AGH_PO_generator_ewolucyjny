@@ -1,8 +1,8 @@
 package agh.ics.oop;
 
 public class WrappedWorldMap extends WorldMap {
-    public WrappedWorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
-        super(startingConfig, jungle, dayChangeObserver);
+    public WrappedWorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver, boolean isMagic) {
+        super(startingConfig, jungle, dayChangeObserver, isMagic);
     }
 
     @Override

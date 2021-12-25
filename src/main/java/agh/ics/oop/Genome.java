@@ -23,6 +23,12 @@ public record Genome(int[] genome) {
         return new Genome(result);
     }
 
+    public Genome getSorted() {
+        int[] copy = Arrays.copyOf(genome, SIZE);
+        Arrays.sort(copy);
+        return new Genome(copy);
+    }
+
     public int pickRandom() {
         return genome[new Random().nextInt(SIZE)];
     }

@@ -1,8 +1,8 @@
 package agh.ics.oop;
 
 public class BorderedWorldMap extends WorldMap {
-    public BorderedWorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
-        super(startingConfig, jungle, dayChangeObserver);
+    public BorderedWorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver, boolean isMagic) {
+        super(startingConfig, jungle, dayChangeObserver, isMagic);
     }
 
     @Override

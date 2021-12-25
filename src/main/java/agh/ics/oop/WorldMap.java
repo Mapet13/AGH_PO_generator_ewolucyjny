@@ -23,8 +23,12 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     protected final Jungle jungle;
     private int dayCount = 0;
     private final ReproductionSystem reproductionSystem = new ReproductionSystem(animalIDProvider, this);
+    private int magicCounter = 3;
+    private static final int magicalNumber = 5;
+    private final boolean isMagic;
 
-    public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver) {
+    public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver, boolean isMagic) {
+        this.isMagic = isMagic;
         this.dayChangeObserver = dayChangeObserver;
         this.startingConfig = startingConfig;
         this.jungle = jungle;
@@ -68,6 +72,9 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     public void toNextDay() {
+        if(isMagic && livingAnimals.size() == magicalNumber && magicCounter > 0)
+            doMagic();
+
         changedTiles.clear();
 
         removeDeadAnimals();
@@ -79,6 +86,23 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         dayCount += 1;
 
         Platform.runLater(() -> dayChangeObserver.onDayChanged(changedTiles, getMapType()));
+    }
+
+    private void doMagic() {
+        System.out.println("Doing Magic!");
+        magicCounter -= 1;
+        livingAnimals.stream().map(Animal::getGenome).forEach(copiedGenome -> {
+            addAnimalAtRandomPosition(new Genome(copiedGenome.genome()));
+        });
+    }
+
+    private void addAnimalAtRandomPosition(Genome genome) {
+        final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
+        position.ifPresent(this::addAnimalAtSpecificPosHolder);
+        Vector2d animalPos = position.orElse(getRandomPosition());
+        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, genome);
+        animals.get(animalPos).add(animal);
+        livingAnimals.add(animal);
     }
 
     private void reproduceAnimals() {
@@ -234,7 +258,13 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
 
     public Genome getMostCommonGenome() {
         Map<Genome, Integer> map = new HashMap<>();
-        livingAnimals.stream().map(Animal::getGenome).forEach(t -> map.compute(t, (k, i) -> i == null ? 1 : i + 1));
+        livingAnimals.stream().map(Animal::getGenome).map(Genome::getSorted).forEach(t -> map.compute(t, (k, i) -> i == null ? 1 : i + 1));
         return Collections.max(map.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
+
+    public List<Animal> getAnimalsWithGenome(Genome genome) {
+        Genome sorted = genome.getSorted();
+        return livingAnimals.stream().filter(animal -> animal.getGenome().getSorted().equals(sorted)).toList();
+    }
+
 }
