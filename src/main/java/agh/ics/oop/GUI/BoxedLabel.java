@@ -1,7 +1,8 @@
-package agh.ics.oop;
+package agh.ics.oop.GUI;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -10,8 +11,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
-public class BoxedLabel {
-    public final VBox body;
+public class BoxedLabel implements IGuiElement {
+    private final VBox body;
 
     public BoxedLabel(String text, double fontSize) {
         Label label = new Label(text);
@@ -26,5 +27,10 @@ public class BoxedLabel {
 
         body = new VBox(label);
         body.setAlignment(Pos.BOTTOM_CENTER);
+    }
+
+    @Override
+    public Node getBody() {
+        return body;
     }
 }

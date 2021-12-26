@@ -1,5 +1,7 @@
 package agh.ics.oop;
 
+import agh.ics.oop.utilities.Vector2d;
+
 public class WrappedWorldMap extends WorldMap {
     public WrappedWorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver, boolean isMagic) {
         super(startingConfig, jungle, dayChangeObserver, isMagic);

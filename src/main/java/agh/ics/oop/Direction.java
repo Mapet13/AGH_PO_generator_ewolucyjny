@@ -1,5 +1,7 @@
 package agh.ics.oop;
 
+import agh.ics.oop.utilities.Vector2d;
+
 import java.util.Arrays;
 
 public enum Direction {

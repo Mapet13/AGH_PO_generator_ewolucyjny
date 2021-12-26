@@ -1,9 +1,12 @@
 package agh.ics.oop;
 
+import agh.ics.oop.utilities.IDProvider;
+import agh.ics.oop.utilities.Pair;
+import agh.ics.oop.utilities.UtilityFunctions;
+import agh.ics.oop.utilities.Vector2d;
 import javafx.application.Platform;
 
 import java.util.*;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,22 +36,14 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         this.startingConfig = startingConfig;
         this.jungle = jungle;
 
-        for (int i = 0; i < startingConfig.MapHeight; i++) {
-            for (int j = 0; j < startingConfig.MapWidth; j++) {
+        for (int i = 0; i < startingConfig.MapWidth; i++) {
+            for (int j = 0; j < startingConfig.MapHeight; j++) {
                 emptyPositions.add(new Vector2d(i, j));
             }
         }
 
         placeStartingObjects(startingConfig.InitialAnimalCount, this::placeStartingAnimal);
         placeStartingObjects(startingConfig.InitialGrassCount, () -> placeGrass(emptyPositions));
-    }
-
-    public boolean isOccupied(Vector2d position) {
-        return isOccupiedBy(animals, position) || isOccupiedBy(grasses, position);
-    }
-
-    public boolean isOccupiedBy(Map<Vector2d, ?> objects, Vector2d position) {
-        return specificObjectAt(objects, position) != null;
     }
 
     public Object objectAt(Vector2d position) {
@@ -91,9 +86,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     private void doMagic() {
         System.out.println("Doing Magic!");
         magicCounter -= 1;
-        livingAnimals.stream().map(Animal::getGenome).forEach(copiedGenome -> {
-            addAnimalAtRandomPosition(new Genome(copiedGenome.genome()));
-        });
+        livingAnimals.stream().map(Animal::getGenome).forEach(copiedGenome -> addAnimalAtRandomPosition(new Genome(copiedGenome.genome())));
     }
 
     private void addAnimalAtRandomPosition(Genome genome) {
@@ -110,8 +103,12 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
 
         animals.values().stream()
                 .filter(animalsOnSamePos -> animalsOnSamePos.size() >= minimalParentsCount)
+                .filter(animalsOnSamePos ->
+                        animalsOnSamePos.stream().limit(minimalParentsCount).allMatch(animal ->
+                                animal.getEnergy() >= startingConfig.StartEnergy * ReproductionSystem.minimalReproductionEnergyFactor))
                 .forEach(animalsOnSamePos -> {
-                    Animal child = reproductionSystem.createChildrenFrom(animalsOnSamePos.first(), animalsOnSamePos.iterator().next());
+                    Animal[] parents = new Animal[]{animalsOnSamePos.first(), animalsOnSamePos.iterator().next()};
+                    Animal child = reproductionSystem.createChildrenFrom(parents[0], parents[1]);
                     animalsOnSamePos.add(child);
                     livingAnimals.add(child);
                 });
@@ -168,7 +165,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     private Vector2d getRandomPosition() {
-        return Vector2d.MapFrom(arg -> Utilities.randFromRange(minCoordinate, arg),
+        return Vector2d.MapFrom(arg -> UtilityFunctions.randFromRange(minCoordinate, arg),
                 startingConfig.MapWidth,
                 startingConfig.MapHeight);
     }
@@ -237,11 +234,11 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     public float getAverageEnergyLevel() {
-        return getAverageValueOfAnimals(livingAnimals, Animal::getEnergy);
+        return UtilityFunctions.getAverageOfList(livingAnimals, Animal::getEnergy);
     }
 
     public float getAverageLengthOfLife() {
-        return getAverageValueOfAnimals(deadAnimals, Animal::getAge);
+        return UtilityFunctions.getAverageOfList(deadAnimals, Animal::getAge);
     }
 
     public boolean haveAnyDeadAnimals() {
@@ -249,11 +246,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     public float getAverageChildrenCount() {
-        return getAverageValueOfAnimals(livingAnimals, Animal::getChildrenCount);
-    }
-
-    private float getAverageValueOfAnimals(ArrayList<Animal> list, ToIntFunction<Animal> mapper) {
-        return list.stream().mapToInt(mapper).sum() / (float)list.size();
+        return UtilityFunctions.getAverageOfList(livingAnimals, Animal::getChildrenCount);
     }
 
     public Genome getMostCommonGenome() {

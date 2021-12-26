@@ -1,7 +1,11 @@
 package agh.ics.oop;
 
+import agh.ics.oop.utilities.IDProvider;
+import agh.ics.oop.utilities.Pair;
+
 public record ReproductionSystem(IDProvider idProvider, IMoveObserver moveObserver) {
-    private final static float parentalEnergyFactor = 0.25f;
+    public final static float parentalEnergyFactor = 0.25f;
+    public final static float minimalReproductionEnergyFactor = 0.5f;
 
     public Animal createChildrenFrom(Animal firstParent, Animal secondParent) {
         Pair<Animal, Animal> parents = Pair.ShuffledPair(firstParent, secondParent);

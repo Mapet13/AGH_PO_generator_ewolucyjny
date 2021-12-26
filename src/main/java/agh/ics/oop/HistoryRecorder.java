@@ -7,7 +7,7 @@ import java.util.*;
 public class HistoryRecorder {
     final List<Map<SimulationDataTrackValueTypes, Number>> history = new ArrayList<>();
 
-    HistoryRecorder() {
+    public HistoryRecorder() {
         addNextRecord();
     }
 

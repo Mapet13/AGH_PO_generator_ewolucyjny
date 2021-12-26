@@ -1,13 +1,13 @@
 package agh.ics.oop;
 
 public class AppConfig {
-    int MapWidth;
-    int MapHeight;
-    int StartEnergy;
-    int MoveEnergy;
-    int PlantEnergy;
-    int InitialAnimalCount;
-    int InitialGrassCount;
-    float JungleRatio;
-    boolean[] IsMagic;
+    public int MapWidth;
+    public int MapHeight;
+    public int StartEnergy;
+    public int MoveEnergy;
+    public int PlantEnergy;
+    public int InitialAnimalCount;
+    public int InitialGrassCount;
+    public float JungleRatio;
+    public boolean[] IsMagic;
 }

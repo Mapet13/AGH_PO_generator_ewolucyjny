@@ -1,10 +1,12 @@
 package agh.ics.oop;
 
+import agh.ics.oop.utilities.Vector2d;
+
 public class Jungle {
     public final Vector2d lowerLeft;
     public final Vector2d upperRight;
 
-    Jungle(int width, int height, float jungleRatio) {
+    public Jungle(int width, int height, float jungleRatio) {
         int newHalfWidth = (int) (width * jungleRatio / 2.0);
         int newHalfHeight = (int) (height * jungleRatio / 2.0);
         Vector2d center = new Vector2d(width / 2, height / 2);

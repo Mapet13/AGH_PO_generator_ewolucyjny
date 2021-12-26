@@ -1,7 +1,8 @@
 package agh.ics.oop;
 
-import java.util.ArrayList;
-import java.util.List;
+import agh.ics.oop.utilities.Vector2d;
+
+import java.util.*;
 
 public class Animal extends MapEntity {
 
@@ -39,7 +40,9 @@ public class Animal extends MapEntity {
     }
 
     public int getAncestorsCount() {
-        return children.size() + children.stream().mapToInt(Animal::getAncestorsCount).sum();
+        TreeSet<Animal> ancestors = new TreeSet<>(Comparator.comparing(animal -> animal.id));
+        getUniqueAncestors(ancestors);
+        return ancestors.size();
     }
 
     public int getEnergy() {
@@ -107,5 +110,15 @@ public class Animal extends MapEntity {
     
     private Direction getNextDirection() {
         return Direction.FromValue(genome.pickRandom());
+    }
+
+    private TreeSet<Animal> getUniqueAncestors(TreeSet<Animal> ancestors) {
+        children.forEach(child -> {
+            if(!ancestors.contains(child)) {
+                ancestors.add(child);
+                ancestors.addAll(child.getUniqueAncestors(ancestors));
+            }
+        });
+        return ancestors;
     }
 }

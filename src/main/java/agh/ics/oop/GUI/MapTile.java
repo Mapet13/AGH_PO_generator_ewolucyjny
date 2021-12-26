@@ -1,12 +1,15 @@
-package agh.ics.oop;
+package agh.ics.oop.GUI;
 
+import agh.ics.oop.BackgroundType;
+import agh.ics.oop.ContentData;
 import javafx.event.EventHandler;
+import javafx.scene.Node;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 
-public class MapTile {
+public class MapTile implements IGuiElement {
     private static final double maxFontSize = 10.0f;
     private final ImageResourcesManager imageResourcesManager;
     private final StackPane body = new StackPane();
@@ -36,7 +39,8 @@ public class MapTile {
         addContent(data);
     }
 
-    public StackPane getBody() {
+    @Override
+    public Node getBody() {
         return body;
     }
 
@@ -52,7 +56,7 @@ public class MapTile {
         if (!data.isEmpty)
             content.getChildren().add(getImageViewFromPath(data.contentPath, width, height));
         if (!data.text.isEmpty())
-            content.getChildren().add(new BoxedLabel(data.text, Math.min(maxFontSize, width / 2.0f)).body);
+            content.getChildren().add(new BoxedLabel(data.text, Math.min(maxFontSize, width / 2.0f)).getBody());
     }
 
     private ImageView getImageViewFromPath(String path, int width, int height) {

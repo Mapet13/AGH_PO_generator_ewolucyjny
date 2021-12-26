@@ -1,5 +1,7 @@
-package agh.ics.oop;
+package agh.ics.oop.GUI;
 
+import agh.ics.oop.*;
+import agh.ics.oop.utilities.Vector2d;
 import javafx.application.Application;
 import javafx.geometry.HPos;
 import javafx.scene.Node;
@@ -20,59 +22,96 @@ public class App extends Application implements IDayChangeObserver {
     private final Label[] mostCommonGenome = new Label[mapCount];
     private State state = State.Stopped;
     private WorldMap[] maps;
-    private AppConfig config;
+    private final AppConfig config =  new AppConfig();
     private int colHeight;
     private int colWidth;
     private GridPane[] mapGrids;
     private MapTile[][][] mapTiles;
     private HBox mapBox;
-    private SymulationRunner symulationRunner;
+    private SimulationRunner simulationRunner;
     private Jungle jungle;
-    private final Label genomeText = new Label();
-    private final Label childrenText = new Label();
-    private final Label ancestorsText = new Label();
-    private final Label dayOfDeathText = new Label();
     private final ArrayList<MapTile> selectedAnimals = new ArrayList<>();
-    private boolean isFollowingSelectedAnimal = false;
-    private Animal followingAnimal;
-    private MapTypes followingAnimalMapType;
-    private int childrenCountUntilFollowing;
-    private int ancestorsCountUntilFollowing;
     private final HistoryRecorder[] historyRecorder = new HistoryRecorder[]{new HistoryRecorder(), new HistoryRecorder()};
+    private final AnimalSelectionDisplayer selectionDisplayer = new AnimalSelectionDisplayer();
+    private final BorderPane layout = new BorderPane();
 
     @Override
     public void start(Stage primaryStage) {
-        BorderPane layout = new BorderPane();
+        StartScreenIntegerInputField mapWidth = new StartScreenIntegerInputField("Width: ", config.MapWidth);
+        StartScreenIntegerInputField mapHeight = new StartScreenIntegerInputField("Height: ", config.MapHeight);
+        StartScreenIntegerInputField startEnergy = new StartScreenIntegerInputField("Starting energy: ", config.StartEnergy);
+        StartScreenIntegerInputField initialAnimalCount = new StartScreenIntegerInputField("Animal count: ", config.InitialAnimalCount);
+        StartScreenIntegerInputField initialGrassCount = new StartScreenIntegerInputField("Grass count: ", config.InitialGrassCount);
+        StartScreenIntegerInputField moveEnergy = new StartScreenIntegerInputField("Move Energy: ", config.MoveEnergy);
+        StartScreenIntegerInputField plantEnergy = new StartScreenIntegerInputField("Plant Energy: ", config.PlantEnergy);
+
+        Button applyConfig = new Button("Apply Config");
+        applyConfig.setOnAction(event -> {
+            config.MapWidth = mapWidth.getInput();
+            config.MapHeight = mapHeight.getInput();
+            config.StartEnergy = startEnergy.getInput();
+            config.InitialAnimalCount = initialAnimalCount.getInput();
+            config.InitialGrassCount = initialGrassCount.getInput();
+            config.PlantEnergy = plantEnergy.getInput();
+            config.MoveEnergy = moveEnergy.getInput();
+
+            initializeSimulation();
+        });
+
+        VBox box = new VBox();
+        box.getChildren().addAll(
+                mapWidth.getBody(),
+                mapHeight.getBody(),
+                startEnergy.getBody(),
+                initialAnimalCount.getBody(),
+                initialGrassCount.getBody(),
+                moveEnergy.getBody(),
+                plantEnergy.getBody(),
+                applyConfig);
+        layout.setCenter(box);
+
+        Scene scene = new Scene(layout, 1920, 1080);
+
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void initializeSimulation() {
+        layout.getChildren().clear();
+
+        jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
+
+        maps = new WorldMap[mapCount];
+        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
+
         String saveStatisticsToFileText = "Save statistics to file";
         String choseAllAnimalsWithMostCommonGenotypeText = "Chose All Animals With Most Common Genotype";
         Button[] saveStatisticsToFile = new Button[]{new Button(saveStatisticsToFileText), new Button(saveStatisticsToFileText)};
         Button[] choseAllAnimalsWithMostCommonGenotype = new Button[]{new Button(choseAllAnimalsWithMostCommonGenotypeText), new Button(choseAllAnimalsWithMostCommonGenotypeText)};
 
-        Arrays.stream(MapTypes.values()).forEach(type ->  {
-            saveStatisticsToFile[type.value].setOnAction(event ->
-                    historyRecorder[type.value].saveToFile("statistics.csv")
-            );
-        });
+        Arrays.stream(MapTypes.values()).forEach(type -> saveStatisticsToFile[type.value].setOnAction(event ->
+                historyRecorder[type.value].saveToFile("statistics.csv")
+        ));
 
-        Arrays.stream(MapTypes.values()).forEach(type -> {
-            choseAllAnimalsWithMostCommonGenotype[type.value].setOnAction(event -> {
-                selectedAnimals.forEach(MapTile::removeSelectionOnContent);
-                selectedAnimals.clear();
-                var animals = maps[type.value].getAnimalsWithGenome(maps[type.value].getMostCommonGenome());
-                animals.forEach(animal -> {
-                    var pos = animal.getPosition();
-                    if(maps[type.value].objectAt(pos).equals(animal)) {
-                        selectedAnimals.add(mapTiles[type.value][pos.x()][pos.y()]);
-                    }
-                });
-
-                selectedAnimals.forEach(MapTile::applySelectionOnContent);
+        Arrays.stream(MapTypes.values()).forEach(type -> choseAllAnimalsWithMostCommonGenotype[type.value].setOnAction(event -> {
+            selectionDisplayer.clear();
+            selectedAnimals.forEach(MapTile::removeSelectionOnContent);
+            selectedAnimals.clear();
+            var animals = maps[type.value].getAnimalsWithGenome(maps[type.value].getMostCommonGenome());
+            animals.forEach(animal -> {
+                var pos = animal.getPosition();
+                if(maps[type.value].objectAt(pos).equals(animal)) {
+                    selectedAnimals.add(mapTiles[type.value][pos.x()][pos.y()]);
+                }
             });
-        });
 
-        layout.setBottom(new VBox(genomeText, childrenText, ancestorsText, dayOfDeathText));
+            selectedAnimals.forEach(MapTile::applySelectionOnContent);
+        }));
 
-        symulationRunner = new SymulationRunner(maps, 300);
+        layout.setBottom(selectionDisplayer.getBody());
+
+        simulationRunner = new SimulationRunner(maps, 300);
 
         mostCommonGenome[MapTypes.Bordered.value] = new Label();
         mostCommonGenome[MapTypes.Wrapped.value] = new Label();
@@ -116,14 +155,11 @@ public class App extends Application implements IDayChangeObserver {
             switch (state) {
                 case Stopped -> {
                     startButton.setText("Pause");
-                    symulationRunner.resume();
-                    new Thread(symulationRunner).start();
-                    if(!isFollowingSelectedAnimal) {
+                    simulationRunner.resume();
+                    new Thread(simulationRunner).start();
+                    if(!selectionDisplayer.isFollowing()) {
+                        selectedAnimals.forEach(MapTile::removeSelectionOnContent);
                         selectedAnimals.clear();
-                        ancestorsText.setText("");
-                        childrenText.setText("");
-                        genomeText.setText("");
-                        dayOfDeathText.setText("");
                     }
                     rightLayout.getChildren().remove(saveStatisticsToFile[MapTypes.Bordered.value]);
                     leftLayout.getChildren().remove(saveStatisticsToFile[MapTypes.Wrapped.value]);
@@ -132,7 +168,7 @@ public class App extends Application implements IDayChangeObserver {
                 }
                 case Running -> {
                     startButton.setText("Resume");
-                    symulationRunner.pause();
+                    simulationRunner.pause();
                     rightLayout.getChildren().add(saveStatisticsToFile[MapTypes.Bordered.value]);
                     leftLayout.getChildren().add(saveStatisticsToFile[MapTypes.Wrapped.value]);
                     rightLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Bordered.value]);
@@ -147,11 +183,6 @@ public class App extends Application implements IDayChangeObserver {
 
         initializeMap(MapTypes.Wrapped);
         initializeMap(MapTypes.Bordered);
-
-        Scene scene = new Scene(layout, 1920, 1080);
-
-        primaryStage.setScene(scene);
-        primaryStage.show();
     }
 
     private void initializeMap(MapTypes type) {
@@ -219,15 +250,7 @@ public class App extends Application implements IDayChangeObserver {
         selectedAnimals.clear();
         selectedAnimals.add(tile);
 
-        isFollowingSelectedAnimal = true;
-        followingAnimal = animal;
-        followingAnimalMapType = type;
-        childrenCountUntilFollowing = animal.getChildrenCount();
-        ancestorsCountUntilFollowing = animal.getAncestorsCount();
-
-        genomeText.setText(String.format("Genome: %s", animal.getGenome()));
-        ancestorsText.setText("Ancestors count since following: 0");
-        childrenText.setText("Children count since following: 0");
+        selectionDisplayer.set(animal, type);
     }
 
     private ContentData contentPathAt(Vector2d position, MapTypes type) {
@@ -242,7 +265,6 @@ public class App extends Application implements IDayChangeObserver {
 
     @Override
     public void init() {
-        config = new AppConfig();
         config.InitialGrassCount = 40;
         config.InitialAnimalCount = 20;
         config.MapHeight = 10;
@@ -252,12 +274,6 @@ public class App extends Application implements IDayChangeObserver {
         config.PlantEnergy = 200;
         config.JungleRatio = 0.5f;
         config.IsMagic = new boolean[]{false, false};
-
-        jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
-
-        maps = new WorldMap[mapCount];
-        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
     }
 
     @Override
@@ -272,7 +288,7 @@ public class App extends Application implements IDayChangeObserver {
         recordValue(SimulationDataTrackValueTypes.animalCount, day, type, maps[type.value].getAnimalCount());
         recordValue(SimulationDataTrackValueTypes.grassCount, day, type, maps[type.value].getGrassCount());
         recordValue(SimulationDataTrackValueTypes.averageChildrenCount, day, type, maps[type.value].getAverageChildrenCount());
-        recordValue(SimulationDataTrackValueTypes.averageEnergyCount, day, type, maps[type.value].getAverageEnergyLevel());;
+        recordValue(SimulationDataTrackValueTypes.averageEnergyCount, day, type, maps[type.value].getAverageEnergyLevel());
 
         if (maps[type.value].haveAnyDeadAnimals()) {
             recordValue(SimulationDataTrackValueTypes.averageLengthOfLife, day, type, maps[type.value].getAverageLengthOfLife());
@@ -284,16 +300,7 @@ public class App extends Application implements IDayChangeObserver {
 
         mostCommonGenome[type.value].setText(maps[type.value].getMostCommonGenome().toString());
 
-        if(isFollowingSelectedAnimal && followingAnimal != null && followingAnimalMapType.equals(type) ) {
-            Object atPos = maps[type.value].objectAt(followingAnimal.getPosition());
-            if(atPos != null && atPos.equals(followingAnimal))
-                mapTiles[followingAnimalMapType.value][followingAnimal.position.x()][followingAnimal.position.y()].applySelectionOnContent();
-            childrenText.setText(String.format("Children count since following: %s", followingAnimal.getChildrenCount() - childrenCountUntilFollowing));
-            ancestorsText.setText(String.format("Ancestors count since following: %s", followingAnimal.getAncestorsCount() - ancestorsCountUntilFollowing));
-
-            if(followingAnimal.isDead() && dayOfDeathText.getText().isEmpty())
-                dayOfDeathText.setText(String.format("Day of death: %s", day));
-        }
+        selectionDisplayer.update(type, maps[type.value], mapTiles, day);
     }
 
     private void recordValue(SimulationDataTrackValueTypes valueType, int day,MapTypes mapType, Number value) {

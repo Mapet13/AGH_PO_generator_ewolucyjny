@@ -1,11 +1,13 @@
-package agh.ics.oop;
+package agh.ics.oop.GUI;
 
+import agh.ics.oop.utilities.UtilityFunctions;
+import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.paint.Color;
 
-public class Chart {
+public class Chart implements IGuiElement {
     private final LineChart<Number, Number> body = new LineChart<>(new NumberAxis(), new NumberAxis());
     private final XYChart.Series<Number, Number> series = new XYChart.Series<>();
 
@@ -17,7 +19,8 @@ public class Chart {
         series.getNode().lookup(".chart-series-line").setStyle(String.format("-fx-stroke: %s;", getColorStyle(color)));
     }
 
-    public LineChart<Number, Number> getBody(){
+    @Override
+    public Node getBody(){
         return body;
     }
 
@@ -26,11 +29,6 @@ public class Chart {
     }
 
     private String getColorStyle(Color color) {
-        String rgb = String.format("%d, %d, %d",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255));
-
-        return String.format("rgba(%s, 1.0)", rgb);
+        return String.format("rgba(%s, 1.0)", UtilityFunctions.getStringRGB(color));
     }
 }

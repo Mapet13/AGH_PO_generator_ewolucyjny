@@ -1,11 +1,11 @@
 package agh.ics.oop;
 
-public class SymulationRunner implements Runnable {
+public class SimulationRunner implements Runnable {
     private final long sleepTime;
     private final WorldMap[] maps;
     private boolean paused = false;
 
-    public SymulationRunner(WorldMap[] maps, long sleepTime) {
+    public SimulationRunner(WorldMap[] maps, long sleepTime) {
         this.maps = maps;
         this.sleepTime = sleepTime;
     }

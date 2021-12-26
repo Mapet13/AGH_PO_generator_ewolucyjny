@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.utilities;
 
 import java.util.Objects;
 import java.util.function.IntBinaryOperator;
@@ -17,20 +17,6 @@ public record Vector2d(int x, int y) {
         return x >= other.x && y >= other.y;
     }
 
-    public Vector2d upperRight(Vector2d other) {
-        return new Vector2d(
-                Math.max(x, other.x),
-                Math.max(y, other.y)
-        );
-    }
-
-    public Vector2d lowerLeft(Vector2d other) {
-        return new Vector2d(
-                Math.min(x, other.x),
-                Math.min(y, other.y)
-        );
-    }
-
     public Vector2d add(Vector2d other) {
         return new Vector2d(
                 x + other.x,
@@ -45,15 +31,10 @@ public record Vector2d(int x, int y) {
         );
     }
 
-    public Vector2d opposite() {
-        return new Vector2d(y, x);
-    }
-
     public Vector2d moduloWith(int dx, int dy) {
         IntBinaryOperator wrappingModulo = (num, mod) -> num - (int)(mod * Math.floor((double)num / mod));
         return new Vector2d(wrappingModulo.applyAsInt(x, dx), wrappingModulo.applyAsInt(y, dy));
     }
-
 
     @Override
     public String toString() {

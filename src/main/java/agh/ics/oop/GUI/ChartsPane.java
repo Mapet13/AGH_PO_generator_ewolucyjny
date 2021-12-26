@@ -1,5 +1,7 @@
-package agh.ics.oop;
+package agh.ics.oop.GUI;
 
+import agh.ics.oop.SimulationDataTrackValueTypes;
+import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -9,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-public class ChartsPane {
+public class ChartsPane implements IGuiElement {
     private final Map<SimulationDataTrackValueTypes, Chart> charts = new EnumMap<>(SimulationDataTrackValueTypes.class);
     private final HBox body = new HBox();
 
@@ -38,7 +40,8 @@ public class ChartsPane {
         charts.get(type).add(x, y);
     }
 
-    public HBox getBody() {
+    @Override
+    public Node getBody() {
         return body;
     }
 }
