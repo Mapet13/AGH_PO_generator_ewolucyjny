@@ -44,6 +44,9 @@ public class App extends Application implements IDayChangeObserver {
         StartScreenIntegerInputField initialGrassCount = new StartScreenIntegerInputField("Grass count: ", config.InitialGrassCount);
         StartScreenIntegerInputField moveEnergy = new StartScreenIntegerInputField("Move Energy: ", config.MoveEnergy);
         StartScreenIntegerInputField plantEnergy = new StartScreenIntegerInputField("Plant Energy: ", config.PlantEnergy);
+        StartScreenInputSlider jungleRatio = new StartScreenInputSlider("Jungle Ratio: ", config.JungleRatio);
+        StartScreenInputBoolean leftIsMagic = new StartScreenInputBoolean("Is left map magic: ", config.IsMagic[MapTypes.Wrapped.value]);
+        StartScreenInputBoolean rightIsMagic = new StartScreenInputBoolean("Is right map magic: ", config.IsMagic[MapTypes.Bordered.value]);
 
         Button applyConfig = new Button("Apply Config");
         applyConfig.setOnAction(event -> {
@@ -54,6 +57,9 @@ public class App extends Application implements IDayChangeObserver {
             config.InitialGrassCount = initialGrassCount.getInput();
             config.PlantEnergy = plantEnergy.getInput();
             config.MoveEnergy = moveEnergy.getInput();
+            config.JungleRatio = jungleRatio.getInput();
+            config.IsMagic[MapTypes.Wrapped.value] = leftIsMagic.getInput();
+            config.IsMagic[MapTypes.Bordered.value] = rightIsMagic.getInput();
 
             initializeSimulation();
         });
@@ -67,6 +73,9 @@ public class App extends Application implements IDayChangeObserver {
                 initialGrassCount.getBody(),
                 moveEnergy.getBody(),
                 plantEnergy.getBody(),
+                jungleRatio.getBody(),
+                leftIsMagic.getBody(),
+                rightIsMagic.getBody(),
                 applyConfig);
         layout.setCenter(box);
 

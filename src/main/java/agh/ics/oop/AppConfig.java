@@ -8,6 +8,6 @@ public class AppConfig {
     public int PlantEnergy;
     public int InitialAnimalCount;
     public int InitialGrassCount;
-    public float JungleRatio;
+    public double JungleRatio;
     public boolean[] IsMagic;
 }
