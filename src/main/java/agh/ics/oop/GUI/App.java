@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -283,6 +284,26 @@ public class App extends Application implements IDayChangeObserver {
         config.PlantEnergy = 200;
         config.JungleRatio = 0.5f;
         config.IsMagic = new boolean[]{false, false};
+
+        List<String> input = getParameters().getRaw();
+        input.forEach(arg -> {
+            try {
+                String[] parts = arg.split("=");
+                switch (parts[0]) {
+                    case "-gc" -> config.InitialGrassCount = Integer.parseInt(parts[1]);
+                    case "-ac" -> config.InitialAnimalCount = Integer.parseInt(parts[1]);
+                    case "-h" -> config.MapHeight = Integer.parseInt(parts[1]);
+                    case "-w" -> config.MapWidth = Integer.parseInt(parts[1]);
+                    case "-me" -> config.MoveEnergy = Integer.parseInt(parts[1]);
+                    case "-pe" -> config.PlantEnergy = Integer.parseInt(parts[1]);
+                    case "-j" -> config.JungleRatio = Double.parseDouble(parts[1]);
+                    case "-lm" -> config.IsMagic[MapTypes.Wrapped.value] = Boolean.parseBoolean(parts[1]);
+                    case "-rm" -> config.IsMagic[MapTypes.Bordered.value] = Boolean.parseBoolean(parts[1]);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
     }
 
     @Override
