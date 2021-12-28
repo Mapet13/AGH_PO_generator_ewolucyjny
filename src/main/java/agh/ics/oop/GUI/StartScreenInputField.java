@@ -8,7 +8,7 @@ public abstract class StartScreenInputField<T> implements IGuiElement {
     protected final HBox body = new HBox();
 
     public StartScreenInputField(String text) {
-        Label label = new Label(text);
+        Label label = new Label(text + ": ");
         body.getChildren().add(label);
     }
 

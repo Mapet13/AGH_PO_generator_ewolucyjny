@@ -9,7 +9,7 @@ public class WrappedWorldMap extends WorldMap {
 
     @Override
     public Vector2d getProperPosition(Vector2d position) {
-        return position.moduloWith(startingConfig.MapWidth, startingConfig.MapHeight);
+        return position.moduloWith((int)startingConfig.get(AppConfig.Type.MapWidth),  (int)startingConfig.get(AppConfig.Type.MapHeight));
     }
 
     @Override

@@ -1,7 +1,11 @@
 package agh.ics.oop.utilities;
 
+import agh.ics.oop.GUI.StartScreenInputBoolean;
+import agh.ics.oop.GUI.StartScreenInputSlider;
+import agh.ics.oop.GUI.StartScreenIntegerInputField;
 import javafx.scene.paint.Color;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
@@ -20,5 +24,4 @@ public class UtilityFunctions {
                 (int) (color.getGreen() * 255),
                 (int) (color.getBlue() * 255));
     }
-    
 }

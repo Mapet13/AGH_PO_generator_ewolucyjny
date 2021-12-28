@@ -11,10 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 
 public class App extends Application implements IDayChangeObserver {
     private static final int mapCount = 2;
@@ -38,46 +35,26 @@ public class App extends Application implements IDayChangeObserver {
 
     @Override
     public void start(Stage primaryStage) {
-        StartScreenIntegerInputField mapWidth = new StartScreenIntegerInputField("Width: ", config.MapWidth);
-        StartScreenIntegerInputField mapHeight = new StartScreenIntegerInputField("Height: ", config.MapHeight);
-        StartScreenIntegerInputField startEnergy = new StartScreenIntegerInputField("Starting energy: ", config.StartEnergy);
-        StartScreenIntegerInputField initialAnimalCount = new StartScreenIntegerInputField("Animal count: ", config.InitialAnimalCount);
-        StartScreenIntegerInputField initialGrassCount = new StartScreenIntegerInputField("Grass count: ", config.InitialGrassCount);
-        StartScreenIntegerInputField moveEnergy = new StartScreenIntegerInputField("Move Energy: ", config.MoveEnergy);
-        StartScreenIntegerInputField plantEnergy = new StartScreenIntegerInputField("Plant Energy: ", config.PlantEnergy);
-        StartScreenInputSlider jungleRatio = new StartScreenInputSlider("Jungle Ratio: ", config.JungleRatio);
-        StartScreenInputBoolean leftIsMagic = new StartScreenInputBoolean("Is left map magic: ", config.IsMagic[MapTypes.Wrapped.value]);
-        StartScreenInputBoolean rightIsMagic = new StartScreenInputBoolean("Is right map magic: ", config.IsMagic[MapTypes.Bordered.value]);
+
+        final EnumMap<AppConfig.Type, StartScreenInputField<?>> inputFields = new EnumMap<>(AppConfig.Type.class);
+        Arrays.stream(AppConfig.Type.values()).forEach(type ->
+                StartScreenInputFactory.get(type.name, config.get(type)).ifPresent(field ->
+                    inputFields.put(type, field)
+        ));
 
         Button applyConfig = new Button("Apply Config");
-        applyConfig.setOnAction(event -> {
-            config.MapWidth = mapWidth.getInput();
-            config.MapHeight = mapHeight.getInput();
-            config.StartEnergy = startEnergy.getInput();
-            config.InitialAnimalCount = initialAnimalCount.getInput();
-            config.InitialGrassCount = initialGrassCount.getInput();
-            config.PlantEnergy = plantEnergy.getInput();
-            config.MoveEnergy = moveEnergy.getInput();
-            config.JungleRatio = jungleRatio.getInput();
-            config.IsMagic[MapTypes.Wrapped.value] = leftIsMagic.getInput();
-            config.IsMagic[MapTypes.Bordered.value] = rightIsMagic.getInput();
+
+        applyConfig.setOnAction( event -> {
+            Arrays.stream(AppConfig.Type.values()).forEach(type ->
+                config.set(type, inputFields.get(type).getInput())
+            );
 
             initializeSimulation();
         });
 
         VBox box = new VBox();
-        box.getChildren().addAll(
-                mapWidth.getBody(),
-                mapHeight.getBody(),
-                startEnergy.getBody(),
-                initialAnimalCount.getBody(),
-                initialGrassCount.getBody(),
-                moveEnergy.getBody(),
-                plantEnergy.getBody(),
-                jungleRatio.getBody(),
-                leftIsMagic.getBody(),
-                rightIsMagic.getBody(),
-                applyConfig);
+        box.getChildren().addAll(inputFields.values().stream().map(IGuiElement::getBody).toList());
+        box.getChildren().add(applyConfig);
         layout.setCenter(box);
 
         Scene scene = new Scene(layout, 1920, 1080);
@@ -90,11 +67,11 @@ public class App extends Application implements IDayChangeObserver {
     private void initializeSimulation() {
         layout.getChildren().clear();
 
-        jungle = new Jungle(config.MapWidth, config.MapHeight, config.JungleRatio);
+        jungle = new Jungle((int)config.get(AppConfig.Type.MapWidth), (int)config.get(AppConfig.Type.MapHeight), (double)config.get(AppConfig.Type.JungleRatio));
 
         maps = new WorldMap[mapCount];
-        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Wrapped.value]);
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, (boolean)config.get(AppConfig.Type.IsMagicLeft));
+        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, (boolean)config.get(AppConfig.Type.IsMagicRight));
 
         String saveStatisticsToFileText = "Save statistics to file";
         String choseAllAnimalsWithMostCommonGenotypeText = "Chose All Animals With Most Common Genotype";
@@ -150,7 +127,7 @@ public class App extends Application implements IDayChangeObserver {
         rightLayout.setMaxHeight(320);
 
         mapGrids = new GridPane[mapCount];
-        mapTiles = new MapTile[mapCount][config.MapWidth][config.MapHeight];
+        mapTiles = new MapTile[mapCount][(int)config.get(AppConfig.Type.MapWidth)][(int)config.get(AppConfig.Type.MapHeight)];
 
         mapBox = new HBox();
         mapBox.setSpacing(25);
@@ -209,21 +186,23 @@ public class App extends Application implements IDayChangeObserver {
         mapBox.getChildren().set(type.value, mapGrids[type.value]);
 
         int mapMaxSize = 550;
-        int height = mapMaxSize * config.MapHeight / (Math.max(config.MapHeight, config.MapWidth));
-        int width = mapMaxSize * config.MapWidth / (Math.max(config.MapHeight, config.MapWidth));
+        int mapHeight = (int)config.get(AppConfig.Type.MapHeight);
+        int mapWidth = (int)config.get(AppConfig.Type.MapWidth);
+        int height = mapMaxSize * mapHeight / (Math.max(mapHeight, mapWidth));
+        int width = mapMaxSize * mapWidth / (Math.max(mapHeight, mapWidth));
 
-        colHeight = height / config.MapHeight;
-        for (int i = 0; i < config.MapHeight; i++) {
+        colHeight = height / mapHeight;
+        for (int i = 0; i < mapHeight; i++) {
             mapGrids[type.value].getRowConstraints().add(new RowConstraints(colHeight));
         }
 
-        colWidth = width / config.MapWidth;
-        for (int i = 0; i < config.MapWidth; i++) {
+        colWidth = width / mapWidth;
+        for (int i = 0; i < mapWidth; i++) {
             mapGrids[type.value].getColumnConstraints().add(new ColumnConstraints(colWidth));
         }
 
-        for (int i = 0; i < config.MapWidth; i++) {
-            for (int j = 0; j < config.MapHeight; j++) {
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapHeight; j++) {
                 drawObjectAt(new Vector2d(i, j), type);
             }
 
@@ -280,17 +259,9 @@ public class App extends Application implements IDayChangeObserver {
         input.forEach(arg -> {
             try {
                 String[] parts = arg.split("=");
-                switch (parts[0]) {
-                    case "-gc" -> config.InitialGrassCount = Integer.parseInt(parts[1]);
-                    case "-ac" -> config.InitialAnimalCount = Integer.parseInt(parts[1]);
-                    case "-h" -> config.MapHeight = Integer.parseInt(parts[1]);
-                    case "-w" -> config.MapWidth = Integer.parseInt(parts[1]);
-                    case "-me" -> config.MoveEnergy = Integer.parseInt(parts[1]);
-                    case "-pe" -> config.PlantEnergy = Integer.parseInt(parts[1]);
-                    case "-j" -> config.JungleRatio = Double.parseDouble(parts[1]);
-                    case "-lm" -> config.IsMagic[MapTypes.Wrapped.value] = Boolean.parseBoolean(parts[1]);
-                    case "-rm" -> config.IsMagic[MapTypes.Bordered.value] = Boolean.parseBoolean(parts[1]);
-                }
+                Arrays.stream(AppConfig.Type.values()).filter(type -> parts[0].equals("-" + type.shortName)).findAny().ifPresent(
+                        type -> config.parseAndAssign(type, parts[1])
+                );
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
