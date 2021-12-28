@@ -7,6 +7,7 @@ import agh.ics.oop.utilities.Vector2d;
 import javafx.application.Platform;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -91,10 +92,18 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     private void addAnimalAtRandomPosition(Genome genome) {
-        final Vector2d position = getUniquePosition(emptyPositions.stream().toList()).orElse(getRandomPosition());
-        addAnimalAtSpecificPosHolder(position);
-        Animal animal = new Animal(animalIDProvider.getNext(), position, (int) startingConfig.get(AppConfig.Type.StartEnergy), this, genome);
-        animals.get(position).add(animal);
+        addAnimals(pos -> new Animal(animalIDProvider.getNext(), pos, (int) startingConfig.get(AppConfig.Type.StartEnergy), this, genome));
+    }
+
+    private void placeStartingAnimal() {
+        addAnimals(pos -> new Animal(animalIDProvider.getNext(), pos, (int) startingConfig.get(AppConfig.Type.StartEnergy), this));
+    }
+
+    private void addAnimals(Function<Vector2d, Animal> creator) {
+        final Vector2d animalPos = getUniquePosition(emptyPositions.stream().toList()).orElse(getRandomPosition());
+        addAnimalAtSpecificPosHolder(animalPos);
+        Animal animal = creator.apply(animalPos);
+        animals.get(animalPos).add(animal);
         livingAnimals.add(animal);
     }
 
@@ -183,15 +192,6 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
             return Optional.empty();
 
         return Optional.of((Vector2d) availablePositions.toArray()[new Random().nextInt(availablePositions.size())]);
-    }
-
-    private void placeStartingAnimal() {
-        final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
-        position.ifPresent(this::addAnimalAtSpecificPosHolder);
-        Vector2d animalPos = position.orElse(getRandomPosition());
-        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, (int) startingConfig.get(AppConfig.Type.StartEnergy), this);
-        animals.get(animalPos).add(animal);
-        livingAnimals.add(animal);
     }
 
     private void addAnimalAtSpecificPosHolder(Vector2d position) {
