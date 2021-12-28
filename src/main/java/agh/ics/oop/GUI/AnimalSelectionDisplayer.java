@@ -1,6 +1,7 @@
 package agh.ics.oop.GUI;
 
 import agh.ics.oop.*;
+import agh.ics.oop.utilities.Vector2d;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -50,11 +51,15 @@ public class AnimalSelectionDisplayer implements IGuiElement {
 
     public void update(MapTypes type, WorldMap map, MapTile[][][] tiles, int day) {
         if(followingAnimal != null && followingAnimalMapType.equals(type)) {
-            Object atPos = map.objectAt(followingAnimal.getPosition());
+            Vector2d pos = map.getProperPosition(followingAnimal.getPosition());
+            Object atPos = map.objectAt(pos);
+
+            var tile =  tiles[followingAnimalMapType.value][pos.x()][pos.y()];
             if(atPos != null && atPos.equals(followingAnimal))
-                tiles[followingAnimalMapType.value][followingAnimal.getPosition().x()][followingAnimal.getPosition().y()].applySelectionOnContent();
+                tile.applySelectionOnContent();
             else
-                tiles[followingAnimalMapType.value][followingAnimal.getPosition().x()][followingAnimal.getPosition().y()].removeSelectionOnContent();
+                tile.removeSelectionOnContent();
+
             updateCountingLabel(childrenText, "Children", followingAnimal.getChildrenCount() - childrenCountUntilFollowing);
             updateCountingLabel(ancestorsText, "Ancestors", followingAnimal.getAncestorsCount() - ancestorsCountUntilFollowing);
 

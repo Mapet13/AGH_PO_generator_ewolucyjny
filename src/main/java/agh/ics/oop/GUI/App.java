@@ -82,6 +82,7 @@ public class App extends Application implements IDayChangeObserver {
 
         Scene scene = new Scene(layout, 1920, 1080);
 
+        primaryStage.setMaximized(true);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -93,7 +94,7 @@ public class App extends Application implements IDayChangeObserver {
 
         maps = new WorldMap[mapCount];
         maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Bordered.value]);
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, config.IsMagic[MapTypes.Wrapped.value]);
 
         String saveStatisticsToFileText = "Save statistics to file";
         String choseAllAnimalsWithMostCommonGenotypeText = "Chose All Animals With Most Common Genotype";
@@ -110,7 +111,7 @@ public class App extends Application implements IDayChangeObserver {
             selectedAnimals.clear();
             var animals = maps[type.value].getAnimalsWithGenome(maps[type.value].getMostCommonGenome());
             animals.forEach(animal -> {
-                var pos = animal.getPosition();
+                var pos = maps[type.value].getProperPosition(animal.getPosition());
                 if(maps[type.value].objectAt(pos).equals(animal)) {
                     selectedAnimals.add(mapTiles[type.value][pos.x()][pos.y()]);
                 }
@@ -275,16 +276,6 @@ public class App extends Application implements IDayChangeObserver {
 
     @Override
     public void init() {
-        config.InitialGrassCount = 40;
-        config.InitialAnimalCount = 20;
-        config.MapHeight = 10;
-        config.MapWidth = 10;
-        config.StartEnergy = 180;
-        config.MoveEnergy = 10;
-        config.PlantEnergy = 200;
-        config.JungleRatio = 0.5f;
-        config.IsMagic = new boolean[]{false, false};
-
         List<String> input = getParameters().getRaw();
         input.forEach(arg -> {
             try {

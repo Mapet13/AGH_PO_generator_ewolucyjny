@@ -10,7 +10,7 @@ public record Genome(int[] genome) {
 
     public static Genome Randomize() {
         final Random rand = new Random();
-        return new Genome(IntStream.generate(() -> rand.nextInt(MAX)).limit(SIZE).toArray());
+        return new Genome(IntStream.generate(() -> rand.nextInt(MAX + 1)).limit(SIZE).toArray());
     }
 
     public static Genome From(Genome first, Genome second, float ratio) {

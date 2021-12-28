@@ -22,7 +22,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     protected final IDayChangeObserver dayChangeObserver;
     protected final AppConfig startingConfig;
     protected final int minCoordinate = 0;
-    protected final int grassDailyIncrease = 2;
+    protected final int grassDailyIncrease = 1;
     protected final Jungle jungle;
     private int dayCount = 0;
     private final ReproductionSystem reproductionSystem = new ReproductionSystem(animalIDProvider, this);
@@ -86,15 +86,15 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     private void doMagic() {
         System.out.println("Doing Magic!");
         magicCounter -= 1;
-        livingAnimals.stream().map(Animal::getGenome).forEach(copiedGenome -> addAnimalAtRandomPosition(new Genome(copiedGenome.genome())));
+        var copiedGenomes = livingAnimals.stream().map(Animal::getGenome).toList();
+        copiedGenomes.forEach(copiedGenome -> addAnimalAtRandomPosition(new Genome(copiedGenome.genome())));
     }
 
     private void addAnimalAtRandomPosition(Genome genome) {
-        final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
-        position.ifPresent(this::addAnimalAtSpecificPosHolder);
-        Vector2d animalPos = position.orElse(getRandomPosition());
-        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, startingConfig.StartEnergy, this, genome);
-        animals.get(animalPos).add(animal);
+        final Vector2d position = getUniquePosition(emptyPositions.stream().toList()).orElse(getRandomPosition());
+        addAnimalAtSpecificPosHolder(position);
+        Animal animal = new Animal(animalIDProvider.getNext(), position, startingConfig.StartEnergy, this, genome);
+        animals.get(position).add(animal);
         livingAnimals.add(animal);
     }
 
@@ -196,7 +196,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
 
     private void addAnimalAtSpecificPosHolder(Vector2d position) {
         emptyPositions.remove(position);
-        animals.put(position, new TreeSet<>(Comparator.comparingInt(Animal::getEnergy).thenComparing(Animal::getID)));
+        animals.putIfAbsent(position, new TreeSet<>(Comparator.comparingInt(Animal::getEnergy).thenComparing(Animal::getID)));
     }
 
     @Override
@@ -222,7 +222,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         }
     }
 
-    abstract protected Vector2d getProperPosition(Vector2d position);
+    abstract public Vector2d getProperPosition(Vector2d position);
     abstract protected MapTypes getMapType();
 
     public int getAnimalCount() {

@@ -8,7 +8,7 @@ public class BorderedWorldMap extends WorldMap {
     }
 
     @Override
-    protected Vector2d getProperPosition(Vector2d position) {
+    public Vector2d getProperPosition(Vector2d position) {
         return position;
     }
 
