@@ -7,12 +7,12 @@ public class Jungle {
     public final Vector2d upperRight;
 
     public Jungle(int width, int height, double jungleRatio) {
-        int newHalfWidth = (int) (width * jungleRatio / 2.0);
-        int newHalfHeight = (int) (height * jungleRatio / 2.0);
+        double newHalfWidth =  (width * jungleRatio / 2.0);
+        double newHalfHeight = (height * jungleRatio / 2.0);
         Vector2d center = new Vector2d(width / 2, height / 2);
 
-        lowerLeft = new Vector2d(center.x() - newHalfWidth, center.y() - newHalfHeight);
-        upperRight = new Vector2d(center.x() + newHalfWidth, center.y() + newHalfHeight);
+        lowerLeft = new Vector2d((int)(center.x() - newHalfWidth), (int)(center.y() - newHalfHeight));
+        upperRight = new Vector2d((int)(center.x() + newHalfWidth), (int)(center.y() + newHalfHeight));
     }
 
     public boolean isAt(Vector2d position) {

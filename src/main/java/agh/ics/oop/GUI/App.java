@@ -71,6 +71,8 @@ public class App extends Application implements IDayChangeObserver {
         primaryStage.setMaximized(true);
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        primaryStage.setOnCloseRequest(event -> simulationRunner.pause());
     }
 
     private void initializeSimulation() {
