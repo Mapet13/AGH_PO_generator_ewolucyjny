@@ -1,11 +1,8 @@
 package agh.ics.oop.utilities;
 
-import agh.ics.oop.GUI.StartScreenInputBoolean;
-import agh.ics.oop.GUI.StartScreenInputSlider;
-import agh.ics.oop.GUI.StartScreenIntegerInputField;
 import javafx.scene.paint.Color;
+
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
@@ -15,7 +12,7 @@ public class UtilityFunctions {
     }
 
     public static <T> float getAverageOfList(List<T> list, ToIntFunction<T> mapper) {
-        return list.stream().mapToInt(mapper).sum() / (float)list.size();
+        return list.stream().mapToInt(mapper).sum() / (float) list.size();
     }
 
     public static String getStringRGB(Color color) {

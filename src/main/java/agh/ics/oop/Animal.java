@@ -2,16 +2,19 @@ package agh.ics.oop;
 
 import agh.ics.oop.utilities.Vector2d;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TreeSet;
 
 public class Animal extends MapEntity {
 
-    private int age = 0;
-    private int energy;
     private final String id;
     private final Genome genome;
     private final List<Animal> children = new ArrayList<>();
     private final List<IMoveObserver> moveObservers = new ArrayList<>();
+    private int age = 0;
+    private int energy;
     private Direction direction = Direction.N;
 
     public Animal(String id, Vector2d position, int energy, IMoveObserver moveObserver, Genome genome) {
@@ -107,14 +110,14 @@ public class Animal extends MapEntity {
             moveObservers.forEach(observer -> observer.onAnimalMove(this, oldPos));
         }
     }
-    
+
     private Direction getNextDirection() {
         return Direction.FromValue(genome.pickRandom());
     }
 
     private TreeSet<Animal> getUniqueAncestors(TreeSet<Animal> ancestors) {
         children.forEach(child -> {
-            if(!ancestors.contains(child)) {
+            if (!ancestors.contains(child)) {
                 ancestors.add(child);
                 ancestors.addAll(child.getUniqueAncestors(ancestors));
             }

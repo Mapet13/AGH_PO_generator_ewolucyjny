@@ -11,11 +11,11 @@ public class ContentData {
         this.text = text;
     }
 
-    public static ContentData Empty() {
-        return new ContentData("", "", true);
-    }
-
     public ContentData(String contentPath, String text) {
         this(contentPath, text, false);
+    }
+
+    public static ContentData Empty() {
+        return new ContentData("", "", true);
     }
 }

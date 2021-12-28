@@ -1,6 +1,8 @@
 package agh.ics.oop.GUI;
 
-import agh.ics.oop.*;
+import agh.ics.oop.Animal;
+import agh.ics.oop.MapTypes;
+import agh.ics.oop.WorldMap;
 import agh.ics.oop.utilities.Vector2d;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -50,12 +52,12 @@ public class AnimalSelectionDisplayer implements IGuiElement {
     }
 
     public void update(MapTypes type, WorldMap map, MapTile[][][] tiles, int day) {
-        if(followingAnimal != null && followingAnimalMapType.equals(type)) {
+        if (followingAnimal != null && followingAnimalMapType.equals(type)) {
             Vector2d pos = map.getProperPosition(followingAnimal.getPosition());
             Object atPos = map.objectAt(pos);
 
-            var tile =  tiles[followingAnimalMapType.value][pos.x()][pos.y()];
-            if(atPos != null && atPos.equals(followingAnimal))
+            var tile = tiles[followingAnimalMapType.value][pos.x()][pos.y()];
+            if (atPos != null && atPos.equals(followingAnimal))
                 tile.applySelectionOnContent();
             else
                 tile.removeSelectionOnContent();
@@ -63,7 +65,7 @@ public class AnimalSelectionDisplayer implements IGuiElement {
             updateCountingLabel(childrenText, "Children", followingAnimal.getChildrenCount() - childrenCountUntilFollowing);
             updateCountingLabel(ancestorsText, "Ancestors", followingAnimal.getAncestorsCount() - ancestorsCountUntilFollowing);
 
-            if(followingAnimal.isDead() && dayOfDeathText.getText().isEmpty())
+            if (followingAnimal.isDead() && dayOfDeathText.getText().isEmpty())
                 dayOfDeathText.setText(String.format("Day of death: %s", day));
         }
     }

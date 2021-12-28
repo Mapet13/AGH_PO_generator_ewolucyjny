@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
+    private static final int magicalNumber = 5;
     protected final IDProvider animalIDProvider = new IDProvider();
     protected final ArrayList<Animal> livingAnimals = new ArrayList<>();
     protected final ArrayList<Animal> deadAnimals = new ArrayList<>();
@@ -24,11 +25,10 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     protected final int minCoordinate = 0;
     protected final int grassDailyIncrease = 1;
     protected final Jungle jungle;
-    private int dayCount = 0;
     private final ReproductionSystem reproductionSystem = new ReproductionSystem(animalIDProvider, this);
-    private int magicCounter = 3;
-    private static final int magicalNumber = 5;
     private final boolean isMagic;
+    private int dayCount = 0;
+    private int magicCounter = 3;
 
     public WorldMap(AppConfig startingConfig, Jungle jungle, IDayChangeObserver dayChangeObserver, boolean isMagic) {
         this.isMagic = isMagic;
@@ -36,14 +36,14 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         this.startingConfig = startingConfig;
         this.jungle = jungle;
 
-        for (int i = 0; i < (int)startingConfig.get(AppConfig.Type.MapWidth); i++) {
-            for (int j = 0; j < (int)startingConfig.get(AppConfig.Type.MapHeight); j++) {
+        for (int i = 0; i < (int) startingConfig.get(AppConfig.Type.MapWidth); i++) {
+            for (int j = 0; j < (int) startingConfig.get(AppConfig.Type.MapHeight); j++) {
                 emptyPositions.add(new Vector2d(i, j));
             }
         }
 
-        placeStartingObjects((int)startingConfig.get(AppConfig.Type.InitialAnimalCount), this::placeStartingAnimal);
-        placeStartingObjects((int)startingConfig.get(AppConfig.Type.InitialGrassCount), () -> placeGrass(emptyPositions));
+        placeStartingObjects((int) startingConfig.get(AppConfig.Type.InitialAnimalCount), this::placeStartingAnimal);
+        placeStartingObjects((int) startingConfig.get(AppConfig.Type.InitialGrassCount), () -> placeGrass(emptyPositions));
     }
 
     public Object objectAt(Vector2d position) {
@@ -67,7 +67,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     public void toNextDay() {
-        if(isMagic && livingAnimals.size() == magicalNumber && magicCounter > 0)
+        if (isMagic && livingAnimals.size() == magicalNumber && magicCounter > 0)
             doMagic();
 
         changedTiles.clear();
@@ -93,7 +93,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     private void addAnimalAtRandomPosition(Genome genome) {
         final Vector2d position = getUniquePosition(emptyPositions.stream().toList()).orElse(getRandomPosition());
         addAnimalAtSpecificPosHolder(position);
-        Animal animal = new Animal(animalIDProvider.getNext(), position, (int)startingConfig.get(AppConfig.Type.StartEnergy), this, genome);
+        Animal animal = new Animal(animalIDProvider.getNext(), position, (int) startingConfig.get(AppConfig.Type.StartEnergy), this, genome);
         animals.get(position).add(animal);
         livingAnimals.add(animal);
     }
@@ -105,7 +105,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
                 .filter(animalsOnSamePos -> animalsOnSamePos.size() >= minimalParentsCount)
                 .filter(animalsOnSamePos ->
                         animalsOnSamePos.stream().limit(minimalParentsCount).allMatch(animal ->
-                                animal.getEnergy() >=  (int)startingConfig.get(AppConfig.Type.StartEnergy) * ReproductionSystem.minimalReproductionEnergyFactor))
+                                animal.getEnergy() >= (int) startingConfig.get(AppConfig.Type.StartEnergy) * ReproductionSystem.minimalReproductionEnergyFactor))
                 .forEach(animalsOnSamePos -> {
                     Animal[] parents = new Animal[]{animalsOnSamePos.first(), animalsOnSamePos.iterator().next()};
                     Animal child = reproductionSystem.createChildrenFrom(parents[0], parents[1]);
@@ -127,7 +127,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
             var animalAtPos = animals.get(grass.getKey());
             if (animalAtPos != null && animalAtPos.size() > 0) {
                 var animalWithBiggestEnergyValue = animalAtPos.stream().filter(animal -> animal.getEnergy() == animalAtPos.first().getEnergy()).toList();
-                animalWithBiggestEnergyValue.forEach(animal -> animal.eat( (int)startingConfig.get(AppConfig.Type.PlantEnergy) / animalWithBiggestEnergyValue.size()));
+                animalWithBiggestEnergyValue.forEach(animal -> animal.eat((int) startingConfig.get(AppConfig.Type.PlantEnergy) / animalWithBiggestEnergyValue.size()));
                 return true;
             }
             return false;
@@ -138,7 +138,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         animals.forEach((key, value) -> {
             ArrayList<Animal> animalAtPos = new ArrayList<>();
             value.forEach(animal -> {
-                animal.move( (int)startingConfig.get(AppConfig.Type.MoveEnergy), this);
+                animal.move((int) startingConfig.get(AppConfig.Type.MoveEnergy), this);
                 animalAtPos.add(animal);
             });
             value.clear();
@@ -166,8 +166,8 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
 
     private Vector2d getRandomPosition() {
         return Vector2d.MapFrom(arg -> UtilityFunctions.randFromRange(minCoordinate, arg),
-                (int)startingConfig.get(AppConfig.Type.MapWidth),
-                        (int)startingConfig.get(AppConfig.Type.MapHeight));
+                (int) startingConfig.get(AppConfig.Type.MapWidth),
+                (int) startingConfig.get(AppConfig.Type.MapHeight));
     }
 
     private void placeGrass(Collection<Vector2d> availablePositions) {
@@ -189,7 +189,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
         final Optional<Vector2d> position = getUniquePosition(emptyPositions.stream().toList());
         position.ifPresent(this::addAnimalAtSpecificPosHolder);
         Vector2d animalPos = position.orElse(getRandomPosition());
-        Animal animal = new Animal(animalIDProvider.getNext(), animalPos,  (int)startingConfig.get(AppConfig.Type.StartEnergy), this);
+        Animal animal = new Animal(animalIDProvider.getNext(), animalPos, (int) startingConfig.get(AppConfig.Type.StartEnergy), this);
         animals.get(animalPos).add(animal);
         livingAnimals.add(animal);
     }
@@ -223,6 +223,7 @@ public abstract class WorldMap implements IMoveObserver, IMoveLimiter {
     }
 
     abstract public Vector2d getProperPosition(Vector2d position);
+
     abstract protected MapTypes getMapType();
 
     public int getAnimalCount() {

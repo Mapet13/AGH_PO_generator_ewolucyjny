@@ -20,7 +20,7 @@ public class Chart implements IGuiElement {
     }
 
     @Override
-    public Node getBody(){
+    public Node getBody() {
         return body;
     }
 

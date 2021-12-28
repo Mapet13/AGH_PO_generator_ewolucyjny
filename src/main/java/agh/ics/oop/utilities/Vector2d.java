@@ -32,7 +32,7 @@ public record Vector2d(int x, int y) {
     }
 
     public Vector2d moduloWith(int dx, int dy) {
-        IntBinaryOperator wrappingModulo = (num, mod) -> num - (int)(mod * Math.floor((double)num / mod));
+        IntBinaryOperator wrappingModulo = (num, mod) -> num - (int) (mod * Math.floor((double) num / mod));
         return new Vector2d(wrappingModulo.applyAsInt(x, dx), wrappingModulo.applyAsInt(y, dy));
     }
 

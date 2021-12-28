@@ -14,24 +14,33 @@ import javafx.stage.Stage;
 import java.util.*;
 
 public class App extends Application implements IDayChangeObserver {
-    private static final int mapCount = 2;
+    private static final int MapCount = 2;
+    private static final int AppWidth = 1920;
+    private static final int AppHeight = 1080;
+    private static final int SideWidth = 400;
+    private static final int SideHeight = 320;
+    private static final int MapSpacing = 24;
+    private static final int MapSize = 550;
+    private static final int SleepTime = 300;
+    private static final String StatisticFileName = "statistics.csv";
+
     private final ImageResourcesManager imageResourcesManager = new ImageResourcesManager();
-    private final ChartsPane[] chartsPanes = new ChartsPane[mapCount];
-    private final Label[] mostCommonGenome = new Label[mapCount];
+    private final ChartsPane[] chartsPanes = new ChartsPane[MapCount];
+    private final Label[] mostCommonGenome = new Label[MapCount];
+    private final AppConfig config = new AppConfig();
+    private final ArrayList<MapTile> selectedAnimals = new ArrayList<>();
+    private final HistoryRecorder[] historyRecorder = new HistoryRecorder[]{new HistoryRecorder(), new HistoryRecorder()};
+    private final AnimalSelectionDisplayer selectionDisplayer = new AnimalSelectionDisplayer();
+    private final BorderPane layout = new BorderPane();
     private State state = State.Stopped;
     private WorldMap[] maps;
-    private final AppConfig config =  new AppConfig();
-    private int colHeight;
-    private int colWidth;
     private GridPane[] mapGrids;
     private MapTile[][][] mapTiles;
     private HBox mapBox;
     private SimulationRunner simulationRunner;
     private Jungle jungle;
-    private final ArrayList<MapTile> selectedAnimals = new ArrayList<>();
-    private final HistoryRecorder[] historyRecorder = new HistoryRecorder[]{new HistoryRecorder(), new HistoryRecorder()};
-    private final AnimalSelectionDisplayer selectionDisplayer = new AnimalSelectionDisplayer();
-    private final BorderPane layout = new BorderPane();
+    private int colHeight;
+    private int colWidth;
 
     @Override
     public void start(Stage primaryStage) {
@@ -39,14 +48,14 @@ public class App extends Application implements IDayChangeObserver {
         final EnumMap<AppConfig.Type, StartScreenInputField<?>> inputFields = new EnumMap<>(AppConfig.Type.class);
         Arrays.stream(AppConfig.Type.values()).forEach(type ->
                 StartScreenInputFactory.get(type.name, config.get(type)).ifPresent(field ->
-                    inputFields.put(type, field)
-        ));
+                        inputFields.put(type, field)
+                ));
 
         Button applyConfig = new Button("Apply Config");
 
-        applyConfig.setOnAction( event -> {
+        applyConfig.setOnAction(event -> {
             Arrays.stream(AppConfig.Type.values()).forEach(type ->
-                config.set(type, inputFields.get(type).getInput())
+                    config.set(type, inputFields.get(type).getInput())
             );
 
             initializeSimulation();
@@ -57,7 +66,7 @@ public class App extends Application implements IDayChangeObserver {
         box.getChildren().add(applyConfig);
         layout.setCenter(box);
 
-        Scene scene = new Scene(layout, 1920, 1080);
+        Scene scene = new Scene(layout, AppWidth, AppHeight);
 
         primaryStage.setMaximized(true);
         primaryStage.setScene(scene);
@@ -67,11 +76,11 @@ public class App extends Application implements IDayChangeObserver {
     private void initializeSimulation() {
         layout.getChildren().clear();
 
-        jungle = new Jungle((int)config.get(AppConfig.Type.MapWidth), (int)config.get(AppConfig.Type.MapHeight), (double)config.get(AppConfig.Type.JungleRatio));
+        jungle = new Jungle((int) config.get(AppConfig.Type.MapWidth), (int) config.get(AppConfig.Type.MapHeight), (double) config.get(AppConfig.Type.JungleRatio));
 
-        maps = new WorldMap[mapCount];
-        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, (boolean)config.get(AppConfig.Type.IsMagicLeft));
-        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, (boolean)config.get(AppConfig.Type.IsMagicRight));
+        maps = new WorldMap[MapCount];
+        maps[MapTypes.Wrapped.value] = new WrappedWorldMap(config, jungle, this, (boolean) config.get(AppConfig.Type.IsMagicLeft));
+        maps[MapTypes.Bordered.value] = new BorderedWorldMap(config, jungle, this, (boolean) config.get(AppConfig.Type.IsMagicRight));
 
         String saveStatisticsToFileText = "Save statistics to file";
         String choseAllAnimalsWithMostCommonGenotypeText = "Chose All Animals With Most Common Genotype";
@@ -79,7 +88,7 @@ public class App extends Application implements IDayChangeObserver {
         Button[] choseAllAnimalsWithMostCommonGenotype = new Button[]{new Button(choseAllAnimalsWithMostCommonGenotypeText), new Button(choseAllAnimalsWithMostCommonGenotypeText)};
 
         Arrays.stream(MapTypes.values()).forEach(type -> saveStatisticsToFile[type.value].setOnAction(event ->
-                historyRecorder[type.value].saveToFile("statistics.csv")
+                historyRecorder[type.value].saveToFile(StatisticFileName)
         ));
 
         Arrays.stream(MapTypes.values()).forEach(type -> choseAllAnimalsWithMostCommonGenotype[type.value].setOnAction(event -> {
@@ -89,7 +98,7 @@ public class App extends Application implements IDayChangeObserver {
             var animals = maps[type.value].getAnimalsWithGenome(maps[type.value].getMostCommonGenome());
             animals.forEach(animal -> {
                 var pos = maps[type.value].getProperPosition(animal.getPosition());
-                if(maps[type.value].objectAt(pos).equals(animal)) {
+                if (maps[type.value].objectAt(pos).equals(animal)) {
                     selectedAnimals.add(mapTiles[type.value][pos.x()][pos.y()]);
                 }
             });
@@ -99,7 +108,7 @@ public class App extends Application implements IDayChangeObserver {
 
         layout.setBottom(selectionDisplayer.getBody());
 
-        simulationRunner = new SimulationRunner(maps, 300);
+        simulationRunner = new SimulationRunner(maps, SleepTime);
 
         mostCommonGenome[MapTypes.Bordered.value] = new Label();
         mostCommonGenome[MapTypes.Wrapped.value] = new Label();
@@ -119,18 +128,18 @@ public class App extends Application implements IDayChangeObserver {
         rightLayout.getChildren().add(saveStatisticsToFile[MapTypes.Bordered.value]);
         rightLayout.getChildren().add(choseAllAnimalsWithMostCommonGenotype[MapTypes.Bordered.value]);
 
-        leftLayout.setMinWidth(400);
-        leftLayout.setMaxWidth(400);
-        leftLayout.setMaxHeight(320);
-        rightLayout.setMinWidth(400);
-        rightLayout.setMaxWidth(400);
-        rightLayout.setMaxHeight(320);
+        leftLayout.setMinWidth(SideWidth);
+        leftLayout.setMaxWidth(SideWidth);
+        leftLayout.setMaxHeight(SideHeight);
+        rightLayout.setMinWidth(SideWidth);
+        rightLayout.setMaxWidth(SideWidth);
+        rightLayout.setMaxHeight(SideHeight);
 
-        mapGrids = new GridPane[mapCount];
-        mapTiles = new MapTile[mapCount][(int)config.get(AppConfig.Type.MapWidth)][(int)config.get(AppConfig.Type.MapHeight)];
+        mapGrids = new GridPane[MapCount];
+        mapTiles = new MapTile[MapCount][(int) config.get(AppConfig.Type.MapWidth)][(int) config.get(AppConfig.Type.MapHeight)];
 
         mapBox = new HBox();
-        mapBox.setSpacing(25);
+        mapBox.setSpacing(MapSpacing);
 
         Button startButton = new Button();
         layout.setTop(startButton);
@@ -145,7 +154,7 @@ public class App extends Application implements IDayChangeObserver {
                     startButton.setText("Pause");
                     simulationRunner.resume();
                     new Thread(simulationRunner).start();
-                    if(!selectionDisplayer.isFollowing()) {
+                    if (!selectionDisplayer.isFollowing()) {
                         selectedAnimals.forEach(MapTile::removeSelectionOnContent);
                         selectedAnimals.clear();
                     }
@@ -185,11 +194,10 @@ public class App extends Application implements IDayChangeObserver {
         mapGrids[type.value].setGridLinesVisible(true);
         mapBox.getChildren().set(type.value, mapGrids[type.value]);
 
-        int mapMaxSize = 550;
-        int mapHeight = (int)config.get(AppConfig.Type.MapHeight);
-        int mapWidth = (int)config.get(AppConfig.Type.MapWidth);
-        int height = mapMaxSize * mapHeight / (Math.max(mapHeight, mapWidth));
-        int width = mapMaxSize * mapWidth / (Math.max(mapHeight, mapWidth));
+        int mapHeight = (int) config.get(AppConfig.Type.MapHeight);
+        int mapWidth = (int) config.get(AppConfig.Type.MapWidth);
+        int height = MapSize * mapHeight / (Math.max(mapHeight, mapWidth));
+        int width = MapSize * mapWidth / (Math.max(mapHeight, mapWidth));
 
         colHeight = height / mapHeight;
         for (int i = 0; i < mapHeight; i++) {
@@ -229,7 +237,7 @@ public class App extends Application implements IDayChangeObserver {
     }
 
     private void onTileClick(MapTypes type, Vector2d position) {
-        if(state == State.Running || !(maps[type.value].objectAt(position) instanceof Animal animal))
+        if (state == State.Running || !(maps[type.value].objectAt(position) instanceof Animal animal))
             return;
 
         MapTile tile = mapTiles[type.value][position.x()][position.y()];
@@ -295,7 +303,7 @@ public class App extends Application implements IDayChangeObserver {
         selectionDisplayer.update(type, maps[type.value], mapTiles, day);
     }
 
-    private void recordValue(SimulationDataTrackValueTypes valueType, int day,MapTypes mapType, Number value) {
+    private void recordValue(SimulationDataTrackValueTypes valueType, int day, MapTypes mapType, Number value) {
         chartsPanes[mapType.value].addValue(valueType, day, value);
         historyRecorder[mapType.value].recordValue(valueType, value);
     }
